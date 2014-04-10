@@ -18,9 +18,9 @@ from sys import argv
 from random import randint
 
 def genNick():
-	flavor = execute('uname')
+	os = platform.system().lower()
 	rannum = str(randint(0000, 9999))
-	return str(flavor[:3] + rannum)
+	return str(os[:3] + rannum)
 
 def execute(cmd):
 	p = sub.Popen(cmd,stdout=sub.PIPE,stderr=sub.PIPE)
@@ -43,6 +43,17 @@ def execute(cmd):
 	else:
 		return lines
 
+#actually sending the data
+def sendData(data):
+	
+	#sending multiple lines if it's a list
+	if type(data) is list:
+		for line in data:
+			irc.send('PRIVMSG ' + channel + " :" + line + '\r\n')
+	#sending a one-liner back
+	else:
+		irc.send('PRIVMSG ' + channel + " :" + data + '\r\n')
+
 #debugger
 DEBUG = 0
 if len(argv) > 1 and (argv[1] == "-d" or argv[1] == "--debug"):
@@ -63,7 +74,7 @@ def reply(): #send back to IRC server that you are here
 
 def whoAmI(): #execute whoami command and send output
 	cmd  = execute("whoami")
-	irc.send('PRIVMSG ' + channel + " :" + cmd + '\r\n')
+	sendData(cmd)
 
 def iAmGood(): #send back to IRC server that you are good
 	irc.send('PRIVMSG ' + channel + " :I am good. And you?" + '\r\n')
@@ -77,8 +88,14 @@ def terminate(): #terminate program and send goodbye message
 
 def freeSpace():
 	cmd = execute("df")
-	for line in cmd:
-		irc.send('PRIVMSG ' + channel + " :" + line + '\r\n')
+	sendData(cmd)
+
+def uptime():
+	cmd = execute("uptime")
+	sendData(cmd)
+
+def info():
+	sendData(platform.release())
 
 #dictionary of functions
 commands = {
@@ -87,7 +104,9 @@ commands = {
 	"who are you" : whoAmI,
 	"how old are you" : getAge,
 	"zombie apocalypse" : terminate,
-	"free" : freeSpace
+	"free" : freeSpace,
+	"uptime" : uptime,
+	"info" : info
 }
 
 #function which parses the command and determine how to handle it
