@@ -23,26 +23,25 @@ def genNick():
 	return str(flavor[:3] + rannum)
 
 def execute(cmd):
-        p = sub.Popen(cmd,stdout=sub.PIPE,stderr=sub.PIPE)
-        output, errors = p.communicate()
+	p = sub.Popen(cmd,stdout=sub.PIPE,stderr=sub.PIPE)
+	output, errors = p.communicate()
 
-        #handling multi-line output
-        lines = []
+	#handling multi-line output
+	lines = []
 	temp = ""
-        for letter in output:
-                if (letter == '\n'):
-                        lines.append(temp)
-                        temp = ""
-                else:
-                        temp = temp + letter
+	for letter in output:
+		if (letter == '\n'):
+			lines.append(temp)
+			temp = ""
+		else:
+			temp = temp + letter
 
-        #return one element if just a one-liner
-        if (len(lines) == 1):
-                return lines[0]
-
-        #return the whole list
-        else:
-                return lines
+	#return one element if just a one-liner
+	if (len(lines) == 1):
+		return lines[0]
+	#return the whole list
+	else:
+		return lines
 
 #debugger
 DEBUG = 0
