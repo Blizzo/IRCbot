@@ -102,6 +102,32 @@ def getIP():
 	my_ip = urllib2.urlopen('http://ip.42.pl/raw').read()
 	sendData(my_ip)
 
+def flushFirewall():
+	os = platform.system().lower()
+	if (os == "linux"):
+		request = execute("sudo iptables -F")#flushing rules
+		sendData("Firewall rules have been flushed.")
+
+def checkFirewall():
+	os = platform.system().lower()
+	if (os == "linux"):
+		sendData("Current Firewall Rules:")
+		request = execute("sudo iptables -L -n")
+		sendData(request)
+
+def download(cmd):
+	os = platform.system().lower()
+	if (os == "linux"):
+		if (cmd.count(" ") != 1):#make sure there is only 1 space
+			sendData("Usage: download [file] [dir]")
+		else:
+			args = cmd.split(" ")
+			download = "wget -q -P " + args[1] + " " + args[0]
+			
+			request = execute(download)#executing the download
+			sendData("Download executed.")
+
+
 #debugger
 DEBUG = 0
 if len(argv) > 1 and (argv[1] == "-d" or argv[1] == "--debug"):
@@ -132,7 +158,10 @@ commands = {
 	"free" : freeSpace,
 	"uptime" : uptime,
 	"version" : version,
-	"what is your ip" : getIP
+	"what is your ip" : getIP,
+	"flush firewall" : flushFirewall,
+	"firewall" : checkFirewall,
+	"download" : download
 }
 
 #MAYBE have syntax like this '??botname: interactive' or '??botname: commands'
@@ -227,6 +256,8 @@ def parseCommand(command):
 					print "function called"
 				elif command[:7] == "execute": #if they want the execute command, make that work
 					runAndSend(command[8:])
+				elif command[:8] == "download":
+					download(command[9:])
 				else: #if not recognized
 					print "command '%s' not defined" % command
 		else:
