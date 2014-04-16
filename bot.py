@@ -43,18 +43,21 @@ def execute(cmd): #execute shell commands
 		
 		except:#if there was some sytax error, spit back an error
 			print "An error has occured.\n"
-                        return "An error has occured."
+			return "An error has occured. Probably invalid command or syntax."
 
 	#handles a 1-liner
 	else:
 		try:#checking for syntax errors
 			p = sub.Popen(cmd,stdout=sub.PIPE,stderr=sub.PIPE)
 			output, errors = p.communicate()
-		
+
 		except:
 			print "An error has occured.\n"
-			return "An error has occured."	
+			return "An error has occured. Probably invalid command or syntax."
 	
+	if len(output) < 1:
+		return errors
+
 	#handling multi-line output
 	lines = output.split("\n")[:-1] #split based on newline, return all except last element which is just a blank new line
 	if len(lines) > 1: #if there was a new line found, return array
