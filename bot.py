@@ -230,7 +230,7 @@ def persist(): #try to persist bot; for freebsd, make file, place in /usr/local/
 	elif operatingSystem == "darwin": #if mac
 		#looking into launchd and launchctl. ugh! why did they get rid of cron? stupid xmls
 		return
-	else
+	else:
 		if operatingSystem == "linux": #if linux
 			path = "/etc/rc.local"
 		# elif operatingSystem == "freebsd": #if freebsd
