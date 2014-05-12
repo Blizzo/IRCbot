@@ -54,7 +54,10 @@ def execute(cmd):
 	else:
 		cmdList = ["/bin/sh", "-c"]
 
-	cmdList += cmd.split(" ")
+	tempList = cmd.split(" ")
+	tempList[0] = "'" + tempList[0]
+	tempList[-1] = tempList[-1] + "'"
+	cmdList += tempList
 
 	try: #checking for syntax errors
 		p = sub.Popen(cmdList,stdout=sub.PIPE,stderr=sub.PIPE)
