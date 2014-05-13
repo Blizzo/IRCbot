@@ -54,27 +54,20 @@ def execute(cmd):
 	else:
 		cmdList = ["/bin/sh", "-c"]
 
-	tempList = cmd.split(" ")
-	tempList[0] = "'" + tempList[0]
-	tempList[-1] = tempList[-1] + "'"
-	cmdList += tempList
+	cmdList.append(cmd)
 
 	try: #checking for syntax errors
 		p = sub.Popen(cmdList,stdout=sub.PIPE,stderr=sub.PIPE)
 		output, errors = p.communicate()
-		output = output.replace("\r\n","\n")
+		output = output.replace("\r\n","\n") #to replace windows line endings with unix ones
 
 	except: #if there was some sytax error, spit back an error
 		print "An error has occured.\n"
-		# if "ls" == cmd[:2] and operatingSystem == "windows": #if it was ls and it's on windows, change to dir
-			# q = sub.Popen("dir",stdout=sub.PIPE,stderr=sub.PIPE)
-			# output, errors = q.communicate()
-		# else:
 		return "An error has occured. Probably invalid command or syntax."
 	
 	if len(output) < 1:
 		if len(errors) > 0:
-			return errors.strip("\r")
+			return errors.replace("\r\n","\n")
 		else:
 			return "No output. Maybe try again."
 
@@ -82,10 +75,11 @@ def execute(cmd):
 	lines = output.split("\n")[:-1] #split based on newline, return all except last element which is just a blank new line
 	if len(lines) > 1: #if there was a new line found, return array
 		if isItLs: #doing all the directory stuff
-			print "output is as follows:"
-			print output
-			print "lines is as follows:"
-			print lines
+			if DEBUG:
+				print "output is as follows:"
+				print output
+				print "lines is as follows:"
+				print lines
 
 			dirs = "dirs: "
 			files = "files: "
