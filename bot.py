@@ -475,7 +475,7 @@ def parseCommand(command):
 					return
 
 				users = lines[0].split(" ")
-				if nick in users or "all" in users or nick[:3] in users:
+				if "all" in users or nick in users or nick[:3] in users:
 					lines[1] = lines[1].strip()
 					runFunction(lines[1])
 			else:
@@ -487,12 +487,12 @@ def parseCommand(command):
 		if "PRIVMSG" in command:
 			command = command[command.find("PRIVMSG"):]
 			command = command[(command.find(':') + 1):].strip().lower()
-			if "??finish" == command[:8]:
+			if command.startswith("??finish"):
 				INTERACT[0] = 0
 				INTERACT[1] = 1
-			elif "??+" == command[:3]:
+			elif command.startswith("??+"):
 				users = command[3:].split(" ")
-				if nick in users or "all" in users:
+				if "all" in users or nick in users:
 					INTERACT[1] = 1
 
 #code to connect to an IRC server
